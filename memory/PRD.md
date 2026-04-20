@@ -113,7 +113,11 @@ base64 blobs.
   shows pattern name, hit/total ratio, a coverage bar, and a micro
   40×14 sparkline of that pattern's history. Any pattern below the
   90% threshold is rendered in amber so a CISO can scan the list at a
-  glance.
+  glance. Includes a **"copy as markdown"** button that builds a
+  paste-ready evidence table (`Pattern | Detection | Hit/Total | Trend`
+  with Unicode-block ASCII sparklines `▁▂▃▄▅▆▇█` inline) and copies it
+  to the clipboard — one click turns the audit trail into something a
+  security reviewer can drop straight into a vendor questionnaire.
 - `/app/frontend/src/components/Receipts.jsx` — fetches stats.json and
   stats-history.jsonl, renders three metric tiles (detection rate %,
   FP rate %, patterns + ML entropy count), each with an 88×26 sparkline

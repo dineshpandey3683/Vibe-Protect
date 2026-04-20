@@ -204,6 +204,8 @@ export default function Receipts() {
               perPattern={stats.per_pattern}
               history={history}
               threshold={0.9}
+              generatedAt={stats.generated_at}
+              version={stats.version}
             />
           </div>
         )}
