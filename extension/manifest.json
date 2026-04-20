@@ -1,24 +1,40 @@
 {
   "manifest_version": 3,
-  "name": "Vibe Protect",
-  "version": "1.0.0",
-  "description": "Auto-redacts secrets (API keys, tokens, private keys, emails, IPs) from text you copy — before they leave your clipboard.",
-  "permissions": ["storage", "clipboardWrite", "clipboardRead", "notifications"],
-  "host_permissions": ["<all_urls>"],
+  "name": "Vibe Protect - Clipboard Guardian",
+  "version": "2.0.0",
+  "description": "Intercepts every copy on ChatGPT & Claude and auto-redacts API keys, tokens, private keys, emails and IPs before they leave your clipboard. Zero telemetry.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "optional_permissions": [
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://claude.ai/*",
+    "https://github.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["patterns.js", "content.js"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": ["redactor.js"],
       "run_at": "document_idle",
       "all_frames": true
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Vibe Protect",
+    "default_title": "Vibe Protect - Click to enable clipboard protection on this site",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

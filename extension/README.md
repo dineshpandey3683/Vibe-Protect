@@ -1,29 +1,47 @@
-# Vibe Protect — Browser Extension
+# Vibe Protect — Browser Extension (v2.0)
 
-Intercepts every `copy` / `cut` event, redacts any detected secrets in the
-selection, and writes the cleaned text back to the clipboard before the paste
-target ever sees it. A badge flashes on the extension icon with the count of
-secrets caught. Click the icon to see history + toggle the shield.
+**What's new in v2.0:** radically narrower permission footprint.
+
+| | v1.0 | v2.0 |
+|---|---|---|
+| Host permissions | `<all_urls>` (every site) | Only ChatGPT, Claude, GitHub |
+| Auto-injected content script | Every site | Only ChatGPT & Claude |
+| Clipboard permissions | Always granted | `clipboardRead` is optional, requested on demand |
+| Other sites | Always protected | One-click **Protect this site** in the popup (uses `activeTab`) |
+| Notifications | Permission always granted | Removed (badge counter is enough) |
+
+## How it works now
+
+* **ChatGPT (`chat.openai.com`, `chatgpt.com`) and Claude (`claude.ai`)** —
+  the redactor is auto-injected on page load. Every copy / cut that would
+  contain a secret gets scrubbed before the browser hands it to the destination.
+* **Any other site** — nothing runs automatically. Click the extension icon
+  → **⚠ Protect this site** to inject the redactor into just that tab for the
+  current session. No permanent permission, no cross-site scanning.
+* **Toggle off** — the master switch in the popup disables the redactor
+  across every tab without uninstalling.
 
 ## Install (Chrome / Edge / Brave / Arc)
 
-1. Open `chrome://extensions`
+1. `chrome://extensions`
 2. Enable **Developer mode** (top right)
 3. Click **Load unpacked** → select this `extension/` folder
-4. Pin the **Vibe Protect** action button so you can see the counter badge
+4. Pin the amber shield to your toolbar so you can see the badge counter
 
 ## Install (Firefox)
 
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on** → select `manifest.json`
+1. `about:debugging#/runtime/this-firefox`
+2. **Load Temporary Add-on** → select `manifest.json`
 
-## Customise
+## Customise patterns
 
-Right-click the extension icon → **Options** to toggle individual patterns on
-or off (useful if, for example, you regularly copy `192.168.x.x` addresses and
-don't want them redacted).
+Right-click the extension icon → **Options** to toggle any of the 18 built-in
+patterns on or off.
 
 ## Privacy
 
-All regex matching runs in your browser. The extension makes **zero network
-requests** — there is no analytics, no telemetry, no "phone home".
+* The content script runs **only** on the whitelisted hosts (or on-demand via
+  your explicit click).
+* **Zero network requests.** No analytics, no telemetry, no "phone home".
+* Stats, settings, and the last-50 redaction events are stored in
+  `chrome.storage.sync` / `chrome.storage.local` — browser-local only.

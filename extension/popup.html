@@ -10,12 +10,32 @@
       <div class="brand">
         <span class="dot"></span>
         <span class="name">VIBE PROTECT</span>
+        <span class="version">v2.0</span>
       </div>
-      <label class="switch" title="Arm / disarm">
+      <label class="switch" title="Arm / disarm globally">
         <input id="enabled" type="checkbox" />
         <span class="slider"></span>
       </label>
     </header>
+
+    <section class="site">
+      <div class="site-row">
+        <div>
+          <div class="site-label">CURRENT SITE</div>
+          <div class="site-host" id="site-host">—</div>
+        </div>
+        <div class="site-status" id="site-status">
+          <span class="status-dot"></span>
+          <span class="status-text">checking…</span>
+        </div>
+      </div>
+      <button id="protect-btn" class="protect-btn" hidden>
+        ⚠ Protect this site
+      </button>
+      <div class="hint" id="hint">
+        Auto-protected: ChatGPT · Claude. Other sites need one click above.
+      </div>
+    </section>
 
     <section class="stats">
       <div class="card">
@@ -34,9 +54,9 @@
     </section>
 
     <footer>
-      <a id="options-link" href="#">Patterns & settings</a>
+      <a id="options-link" href="#">Patterns</a>
       <span>·</span>
-      <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+      <a id="github-link" href="https://github.com" target="_blank" rel="noopener">GitHub</a>
     </footer>
 
     <script src="popup.js"></script>
