@@ -88,6 +88,34 @@ base64 blobs.
 - `/app/test_reports/iteration_1.json` — 7/8 backend pytest + 100% frontend
   flows; one pattern-classification tweak (Anthropic ordering) has been fixed
   post-test
+- `/app/backend/tests/test_ml_scorer.py` — 16 tests for the ML-style
+  heuristic scorer (entropy, variety, length, pattern-boost, threshold
+  filter) — all green
+- `/app/backend/tests/test_audit_sqlite.py` — 8 tests for the optional
+  SQLite audit backend (schema, encryption-at-rest, round-trip, tamper
+  detection, date-range / event-type filters) — all green
+- **32/32** pytest tests currently passing
+
+## What's been implemented (2026-02)
+
+### ML-style heuristic secret scoring
+- `AdvancedSecretDetector.calculate_ml_score(text, pattern_matched)` —
+  bounded [0, 1] weighted sum of:
+  Shannon entropy (0.35) + length/128 (0.15) + char variety (0.20) +
+  pattern-match boost (+0.30)
+- Every `AdvancedMatch` now carries a `confidence` float; structural
+  patterns (emails, IPs, CCs, shell prompts, DB URLs) are always 1.0 so an
+  aggressive threshold can't suppress real PII.
+- Configurable `ml_confidence_threshold` (default 0.0 = keep everything).
+- API `Match` model now exposes `confidence` over the wire.
+
+### Optional SQLite audit backend
+- `AuditLogger(backend="sqlite")` persists AES-256-GCM encrypted,
+  HMAC-signed entries in an indexed `audit_events` table with SQL-side
+  date-range / event-type filters.
+- Flat-file (`BACKEND_FLATFILE`) remains the default; both backends share
+  identical crypto + tamper detection.
+- `audit_logger.py --backend sqlite {verify|list|report}` CLI support.
 
 ## Prioritised backlog / future
 

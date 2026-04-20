@@ -48,13 +48,14 @@ import hmac as hmac_mod
 import json
 import os
 import platform
+import sqlite3
 import stat
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 try:
     from cryptography.hazmat.primitives import hashes
@@ -70,6 +71,16 @@ APP_NAME = "vibe_protect"
 APP_VERSION = "2.0.0"
 PBKDF2_ITERATIONS = 200_000
 AUDIT_TRAIL_CAP = 2000  # cap in-memory trail; disk is source of truth
+
+# Optional storage backends. The flat-file backend writes one AES-GCM
+# encrypted, HMAC-signed entry per line of ``audit_YYYYMM.log.enc`` — simple,
+# append-only, easy to ship off-box. The SQLite backend stores the same
+# encrypted+HMAC-ed payload in an indexed ``audit_events`` table, enabling
+# fast date-range and event-type queries on multi-GB archives without ever
+# decrypting the full archive. Both backends share identical crypto.
+BACKEND_FLATFILE = "flatfile"
+BACKEND_SQLITE = "sqlite"
+VALID_BACKENDS = (BACKEND_FLATFILE, BACKEND_SQLITE)
 
 
 # ----------------------------------------------------------- enums / helpers
@@ -117,10 +128,15 @@ class AuditLogger:
         app_name: str = APP_NAME,
         log_dir: Optional[Path] = None,
         max_trail: int = AUDIT_TRAIL_CAP,
+        backend: str = BACKEND_FLATFILE,
     ):
         if not _HAS_CRYPTO:
             raise RuntimeError(
                 "cryptography is required for the audit logger — pip install cryptography"
+            )
+        if backend not in VALID_BACKENDS:
+            raise ValueError(
+                f"unknown audit backend {backend!r}; expected one of {VALID_BACKENDS}"
             )
         self.app_name = app_name
         self.log_dir = Path(log_dir) if log_dir else _default_dir()
@@ -131,6 +147,9 @@ class AuditLogger:
 
         self.audit_trail: List[dict] = []
         self.max_trail = max_trail
+        self.backend = backend
+        if backend == BACKEND_SQLITE:
+            self._init_sqlite()
 
     # ----------------------------------------------------------- file paths
     @property
@@ -145,6 +164,85 @@ class AuditLogger:
     @property
     def _salt_file(self) -> Path:
         return self.log_dir / ".audit_salt"
+
+    @property
+    def sqlite_file(self) -> Path:
+        """Path to the SQLite DB used when backend == 'sqlite'."""
+        return self.log_dir / "audit.sqlite3"
+
+    # --------------------------------------------------------- sqlite backend
+    def _init_sqlite(self) -> None:
+        """Create the audit_events table and indexes (idempotent)."""
+        with self._sqlite_conn() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS audit_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    encrypted_blob TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_timestamp "
+                "ON audit_events(timestamp)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_event_type "
+                "ON audit_events(event_type)"
+            )
+            conn.commit()
+        self._restrict(self.sqlite_file)
+
+    def _sqlite_conn(self) -> sqlite3.Connection:
+        # isolation_level=None keeps each statement auto-committing; we still
+        # open a fresh connection per call for thread-safety.
+        conn = sqlite3.connect(str(self.sqlite_file))
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        return conn
+
+    def _log_to_sqlite(self, timestamp: str, event_type: str, encrypted: str) -> None:
+        with self._sqlite_conn() as conn:
+            conn.execute(
+                "INSERT INTO audit_events (timestamp, event_type, encrypted_blob) "
+                "VALUES (?, ?, ?)",
+                (timestamp, event_type, encrypted),
+            )
+            conn.commit()
+
+    def _iter_sqlite_rows(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        event_type: Optional[EventType] = None,
+    ) -> Iterable[Tuple[str, str, str]]:
+        """Yield (row_ref, event_type, encrypted_blob) with SQL-side filters
+        applied before any decryption work."""
+        sql = "SELECT id, timestamp, event_type, encrypted_blob FROM audit_events WHERE 1=1"
+        params: list = []
+        if start_date:
+            sql += " AND timestamp >= ?"
+            params.append(start_date.isoformat())
+        if end_date:
+            sql += " AND timestamp <= ?"
+            params.append(end_date.isoformat())
+        if event_type:
+            sql += " AND event_type = ?"
+            params.append(EventType(event_type).value)
+        sql += " ORDER BY timestamp ASC"
+        with self._sqlite_conn() as conn:
+            for row_id, _ts, _et, blob in conn.execute(sql, params):
+                yield f"audit.sqlite3:{row_id}", _et, blob
+
+    def _iter_sqlite_all(self) -> Iterable[Tuple[str, str, str]]:
+        with self._sqlite_conn() as conn:
+            for row_id, _ts, et, blob in conn.execute(
+                "SELECT id, timestamp, event_type, encrypted_blob FROM audit_events "
+                "ORDER BY timestamp ASC"
+            ):
+                yield f"audit.sqlite3:{row_id}", et, blob
 
     # ------------------------------------------------------------ key mgmt
     def _get_or_create_keys(self) -> tuple:
@@ -239,9 +337,12 @@ class AuditLogger:
 
         encrypted = self._encrypt(json.dumps(entry, separators=(",", ":")).encode())
         try:
-            with self.current_log_file.open("a", encoding="utf-8") as f:
-                f.write(encrypted + "\n")
-            self._restrict(self.current_log_file)
+            if self.backend == BACKEND_SQLITE:
+                self._log_to_sqlite(entry["timestamp"], entry["event_type"], encrypted)
+            else:
+                with self.current_log_file.open("a", encoding="utf-8") as f:
+                    f.write(encrypted + "\n")
+                self._restrict(self.current_log_file)
         except OSError as e:
             print(f"[vibe-protect] audit write failed: {e}", file=sys.stderr)
 
@@ -265,6 +366,30 @@ class AuditLogger:
         return {k: v for k, v in md.items() if k not in FORBIDDEN}
 
     # ------------------------------------------------------------- queries
+    def _iter_encrypted_entries(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        event_type: Optional[EventType] = None,
+    ) -> Iterable[Tuple[str, str]]:
+        """Yield (row_ref, encrypted_blob) across the active backend.
+
+        Date / event-type filters are applied SQL-side for SQLite; flat-file
+        iteration yields everything and leaves filtering to the caller (the
+        decryption is cheap compared to reading the whole file anyway).
+        """
+        if self.backend == BACKEND_SQLITE:
+            for row_ref, _et, blob in self._iter_sqlite_rows(start_date, end_date, event_type):
+                yield row_ref, blob
+            return
+        for log_file in sorted(self.log_dir.glob("audit_*.log.enc")):
+            with log_file.open("r", encoding="utf-8") as f:
+                for line_no, line in enumerate(f, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    yield f"{log_file.name}:{line_no}", line
+
     def query(
         self,
         start_date: Optional[datetime] = None,
@@ -279,36 +404,31 @@ class AuditLogger:
         """
         results: List[dict] = []
         report = TamperReport()
-        for log_file in sorted(self.log_dir.glob("audit_*.log.enc")):
-            with log_file.open("r", encoding="utf-8") as f:
-                for line_no, line in enumerate(f, start=1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        plaintext = self._decrypt(line)
-                        entry = json.loads(plaintext.decode("utf-8"))
-                    except Exception:
-                        report.tampered.append(f"{log_file.name}:{line_no} (decrypt)")
-                        continue
-                    report.total += 1
-                    stored_hmac = entry.pop("hmac", "")
-                    if verify:
-                        expected = self._compute_hmac(entry)
-                        if not hmac_mod.compare_digest(stored_hmac, expected):
-                            report.tampered.append(f"{log_file.name}:{line_no} (hmac)")
-                            continue
-                    report.good += 1
-                    entry["hmac"] = stored_hmac
+        for row_ref, blob in self._iter_encrypted_entries(start_date, end_date, event_type):
+            try:
+                plaintext = self._decrypt(blob)
+                entry = json.loads(plaintext.decode("utf-8"))
+            except Exception:
+                report.tampered.append(f"{row_ref} (decrypt)")
+                continue
+            report.total += 1
+            stored_hmac = entry.pop("hmac", "")
+            if verify:
+                expected = self._compute_hmac(entry)
+                if not hmac_mod.compare_digest(stored_hmac, expected):
+                    report.tampered.append(f"{row_ref} (hmac)")
+                    continue
+            report.good += 1
+            entry["hmac"] = stored_hmac
 
-                    ts = datetime.fromisoformat(entry["timestamp"])
-                    if start_date and ts < start_date:
-                        continue
-                    if end_date and ts > end_date:
-                        continue
-                    if event_type and entry["event_type"] != EventType(event_type).value:
-                        continue
-                    results.append(entry)
+            ts = datetime.fromisoformat(entry["timestamp"])
+            if start_date and ts < start_date:
+                continue
+            if end_date and ts > end_date:
+                continue
+            if event_type and entry["event_type"] != EventType(event_type).value:
+                continue
+            results.append(entry)
 
         if report.tampered:
             # Record the tamper detection itself — ironic but useful.
@@ -324,24 +444,20 @@ class AuditLogger:
         return sorted(results, key=lambda x: x["timestamp"])
 
     def verify_integrity(self) -> TamperReport:
-        """Walk every log file and return an integrity report (no filtering)."""
+        """Walk every entry on disk (regardless of backend) and return an
+        integrity report (no filtering)."""
         report = TamperReport()
-        for log_file in sorted(self.log_dir.glob("audit_*.log.enc")):
-            with log_file.open("r", encoding="utf-8") as f:
-                for line_no, line in enumerate(f, start=1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    report.total += 1
-                    try:
-                        entry = json.loads(self._decrypt(line).decode("utf-8"))
-                        stored = entry.pop("hmac", "")
-                        if hmac_mod.compare_digest(stored, self._compute_hmac(entry)):
-                            report.good += 1
-                        else:
-                            report.tampered.append(f"{log_file.name}:{line_no}")
-                    except Exception:
-                        report.tampered.append(f"{log_file.name}:{line_no}")
+        for row_ref, blob in self._iter_encrypted_entries():
+            report.total += 1
+            try:
+                entry = json.loads(self._decrypt(blob).decode("utf-8"))
+                stored = entry.pop("hmac", "")
+                if hmac_mod.compare_digest(stored, self._compute_hmac(entry)):
+                    report.good += 1
+                else:
+                    report.tampered.append(row_ref)
+            except Exception:
+                report.tampered.append(row_ref)
         return report
 
     # -------------------------------------------------------------- reports
@@ -399,6 +515,8 @@ __all__ = [
     "EventType",
     "Action",
     "TamperReport",
+    "BACKEND_FLATFILE",
+    "BACKEND_SQLITE",
 ]
 
 
@@ -406,6 +524,12 @@ __all__ = [
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="Vibe Protect audit log inspector")
+    ap.add_argument(
+        "--backend",
+        choices=list(VALID_BACKENDS),
+        default=BACKEND_FLATFILE,
+        help="which audit backend to inspect (default: flatfile)",
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("verify", help="walk the log dir and report any tampered entries")
     r = sub.add_parser("report", help="emit a compliance report")
@@ -413,7 +537,7 @@ if __name__ == "__main__":
     sub.add_parser("list", help="print every verified entry chronologically")
     args = ap.parse_args()
 
-    a = AuditLogger()
+    a = AuditLogger(backend=args.backend)
     if args.cmd == "verify":
         rep = a.verify_integrity()
         print(f"total={rep.total} good={rep.good} tampered={len(rep.tampered)}")

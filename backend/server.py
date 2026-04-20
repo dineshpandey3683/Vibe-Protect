@@ -58,6 +58,7 @@ class Match(BaseModel):
     mask: str
     entropy: float = 0.0
     reason: str = "pattern"
+    confidence: float = 1.0
 
 
 class RedactResponse(BaseModel):
