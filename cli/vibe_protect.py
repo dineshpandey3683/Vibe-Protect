@@ -33,6 +33,7 @@ except ImportError:
 from patterns import redact, PATTERNS
 from advanced_detector import AdvancedSecretDetector, CUSTOM_RULES_FILE, write_sample_custom_rules
 from pattern_updater import PatternLibraryUpdater
+from community_rules import CommunityRulesFetcher
 from updater import check_for_update, print_update_banner, current_version
 
 
@@ -106,9 +107,14 @@ def main() -> int:
         help="Fetch + verify the signed dynamic pattern bundle from the CDN and exit",
     )
     parser.add_argument(
+        "--sync-community-rules",
+        action="store_true",
+        help="Fetch the PR-gated community pattern list from GitHub and exit",
+    )
+    parser.add_argument(
         "--no-pattern-sync",
         action="store_true",
-        help="Skip the opportunistic pattern-library sync on startup",
+        help="Skip opportunistic pattern-library + community-rules sync on startup",
     )
     args = parser.parse_args()
 
@@ -132,6 +138,12 @@ def main() -> int:
         print(f"{icon} pattern sync: {result}")
         return 0 if result.ok else 1
 
+    if args.sync_community_rules:
+        result = CommunityRulesFetcher().sync(force=True)
+        icon = "✓" if result.ok else "⚠"
+        print(f"{icon} {result}")
+        return 0 if result.ok else 1
+
     if args.list_patterns:
         for name, _, desc, ex in PATTERNS:
             print(f"{AMBER}{name:<28}{RESET} {desc}")
@@ -152,6 +164,9 @@ def main() -> int:
                 print(f"{DIM}  ↻ pattern library: {result}{RESET}")
             elif "disabled" not in result.reason and "throttled" not in result.reason:
                 print(f"{DIM}  ↻ pattern sync skipped: {result.reason}{RESET}")
+            cresult = CommunityRulesFetcher().sync(force=False)
+            if cresult.ok:
+                print(f"{DIM}  ↻ {cresult}{RESET}")
         print()
 
     advanced_detector = AdvancedSecretDetector.load_default() if args.advanced else None

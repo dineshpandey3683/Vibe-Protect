@@ -150,25 +150,39 @@ UNION = compile_union()
 
 # ------------------------------------------------------------- dynamic merge
 def merged_patterns():
-    """Return the bundled 18 + any locally-cached dynamic patterns (additive only).
+    """Return the bundled 18 + any locally-cached dynamic + community patterns.
 
-    Dynamic patterns are loaded from ~/.vibeprotect/patterns.json, which is
-    only populated by PatternLibraryUpdater after a signed, validated fetch.
-    If the cache is missing/invalid, we return exactly the bundled list.
+    Strict precedence (earlier = higher priority, earlier match wins in the
+    union regex because of Python's left-to-right alternation):
+        1. bundled (cli/patterns.py) — audited, always wins
+        2. dynamic signed (pattern_updater.py)  — additive, `dyn_` prefix
+        3. community       (community_rules.py) — additive, `community_` prefix
+    Name collisions at any lower tier are dropped, not shadowed — so lower
+    tiers can never weaken a higher tier's protection.
     """
-    try:
-        from pattern_updater import PatternLibraryUpdater
-        dyn = PatternLibraryUpdater().load_dynamic_patterns()
-    except Exception:
-        dyn = []
-    # dedupe by name — bundled always wins
     seen = {n for n, *_ in PATTERNS}
     out = list(PATTERNS)
-    for entry in dyn:
-        if entry[0] in seen:
-            continue
-        seen.add(entry[0])
-        out.append(entry)
+
+    try:
+        from pattern_updater import PatternLibraryUpdater
+        for entry in PatternLibraryUpdater().load_dynamic_patterns():
+            if entry[0] in seen:
+                continue
+            seen.add(entry[0])
+            out.append(entry)
+    except Exception:
+        pass
+
+    try:
+        from community_rules import CommunityRulesFetcher
+        for entry in CommunityRulesFetcher().load_patterns():
+            if entry[0] in seen:
+                continue
+            seen.add(entry[0])
+            out.append(entry)
+    except Exception:
+        pass
+
     return out
 
 

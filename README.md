@@ -175,10 +175,25 @@ curl -s -X POST https://your-host/api/redact \
 
 PRs welcome — especially:
 
-- New patterns (add to `cli/patterns.py` **and** `frontend/src/lib/patterns.js` + `extension/patterns.js`)
+- New patterns: either **bundled** (PR to `/app/cli/patterns.py` + mirrors in
+  JS + extension), or **community** (PR to the separate community-rules repo —
+  see [`docs/community-rules-template/`](docs/community-rules-template/) for
+  the template)
 - Tray-icon support for the desktop app (`pystray`)
 - A Safari port of the extension
 - Tests — there are currently none; regex false-positive detection would be huge
+
+### Pattern tiers at a glance
+
+| Tier | Source | How users opt in | Visible as |
+|---|---|---|---|
+| Bundled | `cli/patterns.py` | always on | `openai_api_key`, … |
+| Signed dynamic | CDN + Ed25519 sig | `VP_ENABLE_PATTERN_SYNC=1` | `dyn_*` |
+| Community | GitHub PR-gated repo | `VP_ENABLE_COMMUNITY_RULES=1` | `community_*` |
+| User custom | `~/.vibeprotect/custom_rules.json` | file exists | custom name |
+
+All tiers are **strictly additive** — lower tiers can never remove, shadow,
+or weaken a higher tier's protection.
 
 ---
 

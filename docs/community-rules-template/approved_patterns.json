@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "description": "PR-gated community-submitted regex patterns for Vibe Protect. Every pattern below was merged by a repo maintainer after code review. This file is fetched by the Vibe Protect CLI when VP_ENABLE_COMMUNITY_RULES=1 is set.",
+  "updated": "2026-01-20",
+  "patterns": [
+    {
+      "name": "sentry_auth_token",
+      "regex": "\\bsntrys_[A-Za-z0-9+/=]{30,}\\b",
+      "description": "Sentry auth tokens (sntrys_...)",
+      "example": "sntrys_eyJpYXQiOjE2NzAwMDAwMDAuMDAwMDAwfQ==_dGVzdA",
+      "submitted_by": "@example-user",
+      "pr": "https://github.com/vibeprotect/community-rules/pull/1"
+    },
+    {
+      "name": "heroku_api_key",
+      "regex": "\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b",
+      "description": "Heroku API keys (UUID v4 format)",
+      "example": "12345678-abcd-1234-abcd-123456789abc",
+      "submitted_by": "@example-user",
+      "pr": "https://github.com/vibeprotect/community-rules/pull/2",
+      "notes": "High false-positive risk — matches any UUID. Consider disabling if you paste UUIDs often."
+    },
+    {
+      "name": "mailgun_key",
+      "regex": "\\bkey-[a-zA-Z0-9]{32}\\b",
+      "description": "Mailgun API keys",
+      "example": "key-abcdefghijklmnopqrstuvwx12345678",
+      "submitted_by": "@example-user",
+      "pr": "https://github.com/vibeprotect/community-rules/pull/3"
+    }
+  ]
+}
