@@ -1,0 +1,94 @@
+{
+  "name": "vibe-protect",
+  "displayName": "Vibe Protect — Clipboard Guardian",
+  "description": "Redact API keys, tokens, and PII from your code before you paste it anywhere. Powered by the Vibe Protect CLI.",
+  "version": "1.0.0",
+  "publisher": "vibeprotect",
+  "license": "MIT",
+  "icon": "icon.png",
+  "categories": ["Other", "Linters"],
+  "keywords": ["security", "secrets", "redact", "dlp", "clipboard", "vibe-protect"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibeprotect/vibe-protect"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibeProtect.redactSelection",
+        "title": "Vibe Protect: Redact selection"
+      },
+      {
+        "command": "vibeProtect.scanActiveFile",
+        "title": "Vibe Protect: Scan current file"
+      },
+      {
+        "command": "vibeProtect.copyScrubbed",
+        "title": "Vibe Protect: Copy scrubbed selection to clipboard"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "vibeProtect.redactSelection",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "vibeProtect.copyScrubbed",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorHasSelection"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "vibeProtect.redactSelection",
+          "when": "editorHasSelection",
+          "group": "9_cutcopypaste"
+        },
+        {
+          "command": "vibeProtect.copyScrubbed",
+          "when": "editorHasSelection",
+          "group": "9_cutcopypaste"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Vibe Protect",
+      "properties": {
+        "vibeProtect.cliPath": {
+          "type": "string",
+          "default": "vibe-protect",
+          "description": "Path to the vibe-protect CLI. Leave as 'vibe-protect' if it is on $PATH (default after `pip install vibe-protect`)."
+        },
+        "vibeProtect.advanced": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable entropy-aware detection (higher recall, slightly more false positives)."
+        },
+        "vibeProtect.scanOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run Vibe Protect against every file on save. Warns if any secret is found (non-blocking)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
