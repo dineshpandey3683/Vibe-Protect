@@ -27,6 +27,7 @@ from datetime import datetime
 # sibling cli/ dir is single source of truth for patterns / updater
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "cli")))
+sys.path.insert(0, _HERE)   # so `autostart` resolves locally
 
 import tkinter as tk
 from tkinter import ttk
@@ -35,6 +36,12 @@ import pyperclip  # noqa: E402
 from patterns import redact, PATTERNS  # noqa: E402
 from updater import current_version  # noqa: E402
 from production_updater import ProductionUpdater  # noqa: E402
+
+try:
+    from autostart import is_enabled as _autostart_on, enable as _autostart_enable, disable as _autostart_disable
+    _HAS_AUTOSTART = True
+except Exception:
+    _HAS_AUTOSTART = False
 
 # ------------------------------------------------------------------ optional deps
 try:
@@ -437,6 +444,18 @@ class VibeApp:
                     lambda _i: "Pause protection" if self.enabled.get() else "Resume protection",
                     self._tray_toggle,
                 ),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "Start at login",
+                    self._tray_toggle_autostart,
+                    checked=lambda _i: _HAS_AUTOSTART and _autostart_on(),
+                    enabled=lambda _i: _HAS_AUTOSTART,
+                ),
+                pystray.MenuItem(
+                    "Open audit folder",
+                    self._tray_open_audit_folder,
+                ),
+                pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Quit Vibe Protect", self._tray_quit),
             )
             self.tray_icon = pystray.Icon("vibe_protect", image, "Vibe Protect", menu)
@@ -472,7 +491,38 @@ class VibeApp:
             self.tray_icon.stop()
         except Exception:
             pass
-        self.root.after(0, self._on_close)
+        self.root.after(0, self._really_quit)
+
+    def _tray_toggle_autostart(self, _icon=None, _item=None):
+        if not _HAS_AUTOSTART:
+            return
+        try:
+            if _autostart_on():
+                _autostart_disable()
+                self._notify("Start at login disabled.")
+            else:
+                path = _autostart_enable()
+                self._notify(f"Start at login enabled\n{path}")
+        except Exception as e:
+            self._notify(f"Couldn't change auto-start: {e}")
+
+    def _tray_open_audit_folder(self, _icon=None, _item=None):
+        # The audit logger stores encrypted logs in ~/.vibeprotect/audit by
+        # default — open the containing folder in the OS file manager.
+        from pathlib import Path
+        audit_dir = Path.home() / ".vibeprotect" / "audit"
+        audit_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            import subprocess
+            import sys as _sys
+            if _sys.platform == "darwin":
+                subprocess.Popen(["open", str(audit_dir)])
+            elif _sys.platform.startswith("win"):
+                os.startfile(str(audit_dir))  # type: ignore[attr-defined]
+            else:
+                subprocess.Popen(["xdg-open", str(audit_dir)])
+        except Exception as e:
+            self._notify(f"Couldn't open audit folder: {e}")
 
     # =============================================================== notify
     def _notify(self, message: str):
@@ -542,18 +592,47 @@ class VibeApp:
             pass
 
     def _on_close(self):
+        """Window-close handler — behaves as 'minimize to tray' when a tray
+        icon is active, and only truly quits if no tray is available (or
+        if the user explicitly chose Quit from the tray menu). This gives
+        us the standard productivity-app UX: X hides, Quit exits.
+        """
+        if _HAS_TRAY and hasattr(self, "tray_icon") and self.tray_icon is not None:
+            try:
+                self.root.withdraw()
+                if not getattr(self, "_hinted_tray", False):
+                    self._notify("Vibe Protect is still running in the tray.\n"
+                                 "Right-click the tray icon to quit.")
+                    self._hinted_tray = True
+            except Exception:
+                self._really_quit()
+            return
+        self._really_quit()
+
+    def _really_quit(self):
         self._stop.set()
         try:
-            if hasattr(self, "tray_icon"):
+            if hasattr(self, "tray_icon") and self.tray_icon is not None:
                 self.tray_icon.stop()
         except Exception:
             pass
-        self.root.destroy()
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
 
 
 def main():
     root = tk.Tk()
-    VibeApp(root)
+    app = VibeApp(root)
+    # When launched by the OS auto-start hook, open directly to the tray
+    # instead of popping a window in the user's face at login.
+    if "--tray-on-launch" in sys.argv and _HAS_TRAY:
+        try:
+            root.withdraw()
+            app._hinted_tray = True  # don't show the "still running" hint on launch
+        except Exception:
+            pass
     root.mainloop()
 
 

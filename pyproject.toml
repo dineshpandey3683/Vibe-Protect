@@ -41,13 +41,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Desktop-app features (Tkinter GUI already stdlib; plyer for notifications).
-desktop = ["plyer>=2.1.0"]
+# Desktop-app features (Tkinter GUI already stdlib;
+# pystray + Pillow for system-tray; plyer for toast notifications).
+desktop = [
+    "plyer>=2.1.0",
+    "pystray>=0.19.5",
+    "Pillow>=10.0.0",
+]
 # Enterprise & SSO features (YAML GPO/MDM parsing + JWT validation).
 enterprise = ["PyYAML>=6.0", "PyJWT>=2.8.0", "requests>=2.31.0"]
 # Everything.
 all = [
     "plyer>=2.1.0",
+    "pystray>=0.19.5",
+    "Pillow>=10.0.0",
     "PyYAML>=6.0",
     "PyJWT>=2.8.0",
     "requests>=2.31.0",
