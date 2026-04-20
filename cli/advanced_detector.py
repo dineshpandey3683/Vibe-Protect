@@ -201,6 +201,25 @@ class AdvancedSecretDetector:
         line = text[line_start:line_end].lower()
         return not any(w in line for w in self.context_words)
 
+    @staticmethod
+    def _luhn_valid(card: str) -> bool:
+        """Validate a credit-card number via the Luhn (MOD-10) checksum.
+
+        Kills the vast majority of random 13-19-digit numeric false
+        positives — build IDs, order IDs, phone numbers with separators
+        removed, etc. — while leaving every real card brand intact.
+        """
+        if not card.isdigit() or not (12 <= len(card) <= 19):
+            return False
+        digits = [int(c) for c in card]
+        odd = digits[-1::-2]
+        even = digits[-2::-2]
+        checksum = sum(odd)
+        for d in even:
+            doubled = d * 2
+            checksum += doubled if doubled < 10 else doubled - 9
+        return checksum % 10 == 0
+
     # -------------------------------------------------------- class factories
     @classmethod
     def load_default(cls, **overrides) -> "AdvancedSecretDetector":
@@ -218,6 +237,11 @@ class AdvancedSecretDetector:
                 if needs_entropy and not self._passes_entropy(original):
                     continue
                 if needs_context and not self._passes_context(text, m.start()):
+                    continue
+                # Credit-card matches get an additional Luhn backstop — the
+                # regex alone would accept any 13-19 digit string with a
+                # valid BIN prefix, which is a huge false-positive surface.
+                if name == "credit_card" and not self._luhn_valid(original):
                     continue
                 # Only score "key-like" patterns via the ML heuristic — low-
                 # entropy structural patterns (emails, IPs, credit cards,

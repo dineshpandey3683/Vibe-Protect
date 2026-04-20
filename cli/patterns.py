@@ -95,8 +95,40 @@ PATTERNS = [
     ),
     (
         "credit_card",
-        r"\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b",
-        "Credit card numbers (Visa, MC, Amex, Discover)",
+        # Covers 7 brands — every match is additionally Luhn-validated by
+        # the detector so a random 16-digit number cannot false-positive:
+        #
+        # 1) Visa            4######## (13 or 16 digits)
+        # 2) Mastercard 2-   2221–2720 (16 digits) — BINs activated 2016+
+        # 3) Mastercard 5-   51–55     (16 digits, legacy range)
+        # 4) Amex            34 / 37   (15 digits)
+        # 5) Discover        6011, 65, 644–649, 622126–622925 (16 digits)
+        # 6) Diners (14)     300–305 / 36 / 38–39 (14 digits)
+        # 7) JCB             3528–3589 (16 digits)
+        # 8) UnionPay        62 (16 digits; 17–19 length reserved for future)
+        #
+        # Deliberately **not** included: Maestro and RuPay. Their published
+        # prefix ranges (5xx, 6xx, 60, 65, 81, 82) collide with every other
+        # brand above and would match any 13+ digit numeric string starting
+        # with 5 or 6 — catastrophic FP risk on order IDs, build numbers,
+        # timestamps. Tracked in TestKnownLimitations.
+        r"\b(?:"
+        # Visa
+        r"4[0-9]{12}(?:[0-9]{3})?"
+        # Mastercard 2-series 2221-2720 and 5-series 51-55
+        r"|(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[0-1][0-9]|2720)[0-9]{12}"
+        # Amex
+        r"|3[47][0-9]{13}"
+        # Discover (6011, 65xx, 644-649, 622126-622925)
+        r"|(?:6011|65[0-9]{2}|64[4-9][0-9]|622(?:1(?:2[6-9]|[3-9][0-9])|[2-8][0-9]{2}|9(?:[01][0-9]|2[0-5])))[0-9]{10,12}"
+        # Diners 14-digit (300-305, 36, 38-39)
+        r"|3(?:0[0-5]|[68][0-9])[0-9]{11}"
+        # JCB (3528-3589)
+        r"|(?:352[89]|35[3-8][0-9])[0-9]{12}"
+        # UnionPay (62 + 14 more digits; 16-total-digit card)
+        r"|62[0-9]{14}"
+        r")\b",
+        "Credit card numbers (Visa, MC incl. 2-series, Amex, Discover, Diners 14d, JCB, UnionPay)",
         "4111111111111111",
     ),
     (

@@ -251,24 +251,39 @@ def gen_ipv4(seed: int, n: int = 30) -> List[PositiveCase]:
 def gen_credit_card(seed: int, n: int = 30) -> List[PositiveCase]:
     """Use well-known public test-card numbers so we never ship a real PAN.
 
-    Restricted to card brands currently covered by the ``credit_card``
-    regex in ``cli/patterns.py`` (Visa, 5-series Mastercard, Amex,
-    Discover). Brands the regex does not yet cover — 2-series Mastercard
-    (2221-2720), 14-digit Diners, and JCB — are asserted as known
-    limitations by ``test_corpus::TestKnownLimitations`` and tracked
-    as a P1 roadmap item. All numbers below are documented test PANs
-    from stripe.com/docs/testing — they cannot belong to any real
-    cardholder and cannot be charged.
+    Covers every brand the current ``credit_card`` regex in
+    ``cli/patterns.py`` supports: Visa, 5-series Mastercard, **2-series
+    Mastercard** (BIN range 2221-2720), Amex, Discover, **14-digit Diners**
+    (300-305 / 36 / 38-39), **JCB** (3528-3589), and **UnionPay** (62). All
+    PANs are Luhn-valid — the detector now post-filters via Luhn, so any
+    random-looking 16-digit number that isn't a real card gets dropped.
+
+    All numbers below come from public payment-processor documentation
+    (stripe.com/docs/testing, adyen.com, unionpay docs, docs.nium.com) —
+    they cannot belong to any real cardholder and cannot be charged.
+
+    Deliberately NOT represented: Maestro, RuPay. Their published prefix
+    ranges (5xx / 6xx / 60 / 65 / 81 / 82) overlap every brand above and
+    the regex rejects them for FP-safety — tracked by
+    ``TestKnownLimitations``.
     """
     test_cards = [
-        "4242424242424242",  # Visa
-        "4000056655665556",  # Visa (debit)
-        "5555555555554444",  # Mastercard 5-series
-        "5200828282828210",  # Mastercard 5-series (debit)
-        "378282246310005",   # Amex
-        "371449635398431",   # Amex
-        "6011111111111117",  # Discover
-        "6011000990139424",  # Discover
+        # Visa
+        "4242424242424242",   "4000056655665556",
+        # Mastercard 5-series
+        "5555555555554444",   "5200828282828210",
+        # Mastercard 2-series  (NEW)
+        "2223003122003222",   "2223000048400011",
+        # Amex
+        "378282246310005",    "371449635398431",
+        # Discover
+        "6011111111111117",   "6011000990139424",
+        # Diners 14-digit  (NEW)
+        "30569309025904",     "38520000023237",
+        # JCB  (NEW)
+        "3566002020360505",   "3530111333300000",
+        # UnionPay  (NEW)
+        "6200000000000005",   "6250947000000014",
     ]
     r = _rng(seed)
     out = []

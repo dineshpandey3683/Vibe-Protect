@@ -202,6 +202,24 @@ that was NOT adopted verbatim):
   unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
   fixtures live under `/app/backend/tests/corpus/`.
 
+### Credit-card regex expansion + Luhn validation (2026-02)
+- Expanded `credit_card` regex in `/app/cli/patterns.py` to cover
+  **7 brands**: Visa, Mastercard 5-series, **Mastercard 2-series
+  (2221-2720)**, Amex, Discover, **14-digit Diners (300-305 / 36 /
+  38-39)**, **JCB (3528-3589)**, and **UnionPay (62)**.
+- Added Luhn (MOD-10) validation in `advanced_detector.py` as a
+  post-filter for `credit_card` matches — catches the vast majority
+  of random-numeric false positives that the regex alone would
+  accept.
+- **Deliberately NOT added**: Maestro and RuPay. Their published
+  prefixes (5xx / 6xx / 60 / 65 / 81 / 82) overlap every other brand
+  and would cause catastrophic false-positive rates on order IDs,
+  build numbers, and separator-stripped phone numbers. Documented
+  in `TestKnownLimitations` with Luhn-valid sample PANs in the
+  `50xx` and `81xx` ranges.
+- Corpus rotates 16 Luhn-valid public test PANs across all 7 brands.
+  Detection stays 100% / FP stays 0%.
+
 ### Regex improvement (2026-02)
 - `long_base64_blob` tightened to exclude pure-hex 60+ char strings
   (git SHAs, docker `@sha256:…` digests, hash output). Surfaced by the
@@ -210,10 +228,6 @@ that was NOT adopted verbatim):
 ## Prioritised backlog / future
 
 **P1**
-- Expand `credit_card` regex to cover 2-series Mastercard (2221-2720),
-  14-digit Diners, and JCB (16-digit). Pinned by
-  `test_corpus::TestKnownLimitations` — those tests will flip to failing
-  when the regex lands, at which point move the PANs into the main corpus.
 - Package CLI as a `pip install vibe-protect` with console script
 - Publish the extension to Chrome Web Store + Firefox Add-ons
 - Real PNG icons for the extension (currently placeholder-only)

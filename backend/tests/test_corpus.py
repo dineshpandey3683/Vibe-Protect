@@ -181,30 +181,46 @@ class TestConfidenceEntropyCorrelation:
 
 # ============================================== documented known limitations
 class TestKnownLimitations:
-    """These assertions pin current regex gaps so they can't regress
-    silently. When one *does* fix itself (because the regex was improved),
-    the failure nudges the maintainer to update ``generators.gen_credit_card``
-    and move the card into the main corpus — a satisfying "test tells me
-    something got better" failure mode.
+    """Documents brands we deliberately DON'T attempt to catch, along with
+    why. The previous set of pinned cases (2-series Mastercard, 14-digit
+    Diners, JCB) all graduated into the main corpus in 2026-02 when the
+    ``credit_card`` regex was expanded + Luhn validation added.
 
-    P1 backlog item: expand ``cli/patterns.py::credit_card`` to cover
-    2-series Mastercard (2221-2720), 14-digit Diners, and JCB.
+    What remains are two brands whose public BIN prefixes overlap
+    catastrophically with the brands we already support:
+
+    * **Maestro** — published prefixes include ``5xx`` and ``6xx`` for
+      12-19 digit cards. Accepting this would match virtually every
+      Mastercard / Discover / JCB / UnionPay PAN a *second* time
+      and, worse, match any random 13+ digit number starting with 5 or 6
+      (build IDs, order IDs, phone numbers with separators removed).
+      Even with Luhn as a backstop, the false-positive floor is too high.
+    * **RuPay** — prefixes ``60 / 65 / 81 / 82 / 508 / 353 / 356`` collide
+      with Discover, JCB, and more. Same reasoning.
+
+    If these test cases start *failing*, somebody improved the regex
+    (probably with bank-specific BIN ranges rather than blunt 5xx / 6xx
+    alternation) — move them into ``generators.gen_credit_card`` and
+    retire this class.
     """
 
-    UNSUPPORTED_CARD_BRANDS = [
-        ("mastercard_2series", "2223003122003222"),
-        ("diners_14_digit",    "30569309025904"),
-        ("diners_14_digit",    "38520000023237"),
-        ("jcb_16_digit",       "3566002020360505"),
+    OVERLAPPING_BRAND_PANS = [
+        # Maestro 50xx — not matched by any of our 7 supported brands
+        ("maestro_50_prefix",   "5018917397102819"),   # Luhn-valid
+        # RuPay 81xx — falls outside every brand's prefix range
+        ("rupay_81_prefix",     "8100000000000002"),   # Luhn-valid
     ]
 
-    @pytest.mark.parametrize("brand,pan", UNSUPPORTED_CARD_BRANDS)
-    def test_unsupported_card_brands_are_not_detected(self, detector, brand, pan):
+    @pytest.mark.parametrize("brand,pan", OVERLAPPING_BRAND_PANS)
+    def test_overlapping_brands_are_not_aggressively_matched(self, detector, brand, pan):
+        """These brands must NOT be classified as ``credit_card`` matches —
+        accepting them would explode the false-positive rate."""
         text = f"Card on file: {pan}"
         matches = detector.detect(text)
-        # Confirm none of the matches flag this PAN as a credit_card.
         cc_hits = [m for m in matches if m.pattern == "credit_card"]
         assert not cc_hits, (
-            f"{brand} ({pan}) IS now being caught — great, move it into the "
-            f"main corpus and remove it from TestKnownLimitations"
+            f"{brand} ({pan}) IS now being classified as credit_card — if "
+            f"this was intentional, move the brand into gen_credit_card and "
+            f"retire this test. If accidental, the regex needs tightening "
+            f"(prefix collision with existing brands)."
         )
