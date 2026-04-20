@@ -108,12 +108,18 @@ base64 blobs.
   be visually distinguished from real CI-generated snapshots.
 - `/app/frontend/src/components/Sparkline.jsx` — dependency-free inline
   SVG polyline with auto-scaling + seed-vs-real dashed-vs-solid rendering.
-- `/app/frontend/src/components/Receipts.jsx` — fetches stats.json **and**
-  stats-history.jsonl, renders three metric tiles (detection rate %, FP
-  rate %, patterns + ML entropy count), each with a 88×26 sparkline in
-  the top-right corner showing the 30-day trend. Colour shifts to amber
-  if FP rate creeps above 1%. Wired into `App.js` between Hero and
-  Playground, plus a `#receipts` nav link.
+- `/app/frontend/src/components/PatternBreakdown.jsx` — expandable
+  per-pattern audit drawer rendered inside a Receipts tile. Each row
+  shows pattern name, hit/total ratio, a coverage bar, and a micro
+  40×14 sparkline of that pattern's history. Any pattern below the
+  90% threshold is rendered in amber so a CISO can scan the list at a
+  glance.
+- `/app/frontend/src/components/Receipts.jsx` — fetches stats.json and
+  stats-history.jsonl, renders three metric tiles (detection rate %,
+  FP rate %, patterns + ML entropy count), each with an 88×26 sparkline
+  in the top-right corner. Detection-rate tile is clickable — opens a
+  two-column per-pattern drawer with the full 18-pattern breakdown +
+  micro-sparklines (vendor-questionnaire-ready evidence).
 - `/app/.github/workflows/ci.yml` — runs pytest corpus on every push/PR,
   downloads prior `stats-history` artifact, regenerates both files, and
   re-uploads both (stats.json 30-day retention, stats-history 90-day).

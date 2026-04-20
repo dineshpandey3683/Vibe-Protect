@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Shield, Brain, AlertCircle } from "lucide-react";
+import { CheckCircle2, Shield, Brain, AlertCircle, ChevronDown } from "lucide-react";
 import Sparkline from "./Sparkline";
+import PatternBreakdown from "./PatternBreakdown";
 
 /**
  * Receipts — proof-points auto-generated from /stats.json and sparklined
@@ -17,6 +18,7 @@ import Sparkline from "./Sparkline";
 export default function Receipts() {
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
+  const [expanded, setExpanded] = useState(null);   // tile id or null
 
   useEffect(() => {
     const base = process.env.PUBLIC_URL || "";
@@ -55,6 +57,7 @@ export default function Receipts() {
 
   const items = [
     {
+      id: "detection",
       icon: <CheckCircle2 size={22} className="text-emerald-400" />,
       metric: `${(stats.detection_rate * 100).toFixed(1)}%`,
       label: "detection rate",
@@ -63,8 +66,11 @@ export default function Receipts() {
       series: detSeries,
       stroke: "#22c55e",
       title: "Detection rate — rolling 30-day history",
+      expandable: true,
+      hint: "per-pattern breakdown",
     },
     {
+      id: "fp",
       icon: <Shield size={22} className="text-emerald-400" />,
       metric: `${(stats.false_positive_rate * 100).toFixed(2)}%`,
       label: "false-positive rate",
@@ -75,6 +81,7 @@ export default function Receipts() {
       title: "False-positive rate — rolling 30-day history",
     },
     {
+      id: "patterns",
       icon: <Brain size={22} className="text-amber-400" />,
       metric: `${stats.patterns_active}`,
       label: "patterns + ML entropy",
@@ -121,40 +128,85 @@ export default function Receipts() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-px bg-white/10 border border-white/10">
-          {items.map((it) => (
-            <div
-              key={it.label}
-              data-testid={it.testid}
-              className="bg-[#0A0A0A] p-7 md:p-9 flex flex-col gap-4 hover:bg-white/[0.02] transition-colors"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {it.icon}
-                  <span className="font-mono text-[10px] tracking-[0.16em] text-zinc-500 uppercase">
-                    {it.label}
-                  </span>
-                </div>
-                <div data-testid={`${it.testid}-sparkline`} className="shrink-0">
-                  <Sparkline
-                    data={it.series}
-                    width={88}
-                    height={26}
-                    stroke={it.stroke}
-                    seedMask={seedMask}
-                    title={it.title}
-                  />
-                </div>
-              </div>
-              <div
-                style={{ fontFamily: "Cabinet Grotesk, sans-serif" }}
-                className="text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-none"
+          {items.map((it) => {
+            const isExpandable = !!it.expandable;
+            const isOpen = expanded === it.id;
+            const TileTag = isExpandable ? "button" : "div";
+            const tileProps = isExpandable
+              ? {
+                  onClick: () => setExpanded(isOpen ? null : it.id),
+                  "aria-expanded": isOpen,
+                  "aria-controls": `${it.testid}-drawer`,
+                  type: "button",
+                }
+              : {};
+            return (
+              <TileTag
+                key={it.label}
+                data-testid={it.testid}
+                {...tileProps}
+                className={`bg-[#0A0A0A] p-7 md:p-9 flex flex-col gap-4 transition-colors text-left w-full ${
+                  isExpandable ? "hover:bg-white/[0.03] cursor-pointer" : "hover:bg-white/[0.02]"
+                } ${isOpen ? "bg-white/[0.03]" : ""}`}
               >
-                {it.metric}
-              </div>
-              <div className="text-sm text-zinc-400 leading-snug">{it.sub}</div>
-            </div>
-          ))}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {it.icon}
+                    <span className="font-mono text-[10px] tracking-[0.16em] text-zinc-500 uppercase">
+                      {it.label}
+                    </span>
+                  </div>
+                  <div data-testid={`${it.testid}-sparkline`} className="shrink-0">
+                    <Sparkline
+                      data={it.series}
+                      width={88}
+                      height={26}
+                      stroke={it.stroke}
+                      seedMask={seedMask}
+                      title={it.title}
+                    />
+                  </div>
+                </div>
+                <div
+                  style={{ fontFamily: "Cabinet Grotesk, sans-serif" }}
+                  className="text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-none"
+                >
+                  {it.metric}
+                </div>
+                <div className="text-sm text-zinc-400 leading-snug">{it.sub}</div>
+                {isExpandable && (
+                  <div
+                    className="mt-1 flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 tracking-widest uppercase"
+                    data-testid={`${it.testid}-expand-hint`}
+                  >
+                    <ChevronDown
+                      size={12}
+                      className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    />
+                    {isOpen ? "hide" : "show"} {it.hint}
+                  </div>
+                )}
+              </TileTag>
+            );
+          })}
         </div>
+
+        {expanded === "detection" && (
+          <div
+            id="receipt-detection-rate-drawer"
+            data-testid="receipt-detection-rate-drawer"
+            className="border-x border-b border-white/10 bg-[#0A0A0A] px-7 md:px-9 pb-8"
+          >
+            <div className="font-mono text-[10px] tracking-[0.16em] text-zinc-500 uppercase pt-6">
+              ▍ per-pattern detection · {Object.keys(stats.per_pattern || {}).length} controls
+            </div>
+            <PatternBreakdown
+              perPattern={stats.per_pattern}
+              history={history}
+              threshold={0.9}
+            />
+          </div>
+        )}
 
         <div className="mt-6 flex items-center gap-2 font-mono text-[11px] text-zinc-500">
           <AlertCircle size={12} />
