@@ -83,6 +83,132 @@ def summarise(matches):
     return ", ".join(f"{k}×{v}" for k, v in counts.items())
 
 
+# --- file-scan helpers -------------------------------------------------------
+def _redact_text(text: str, advanced: bool):
+    """Single entry point so --file and --pre-commit share the exact same
+    detection pipeline as the clipboard watcher."""
+    if advanced:
+        detector = AdvancedSecretDetector.load_default()
+        return detector.redact(text)        # (cleaned, matches) tuple
+    return redact(text)
+
+
+def _matches_to_json(matches):
+    """Project a list of match dicts down to only the fields a CI/CD
+    pipeline cares about — no original values leaked."""
+    return [
+        {
+            "pattern": m["pattern"],
+            "mask": m.get("mask"),
+            "confidence": round(m.get("confidence", 1.0), 4),
+            "start": m.get("start"),
+            "end": m.get("end"),
+        }
+        for m in matches
+    ]
+
+
+def _scan_file(path: str, *, advanced: bool, as_json: bool) -> int:
+    """Scan a single file (or '-' for stdin). Returns the process
+    exit code — 0 if clean, 1 if secrets were found, 2 on I/O error."""
+    try:
+        if path == "-":
+            text = sys.stdin.read()
+            shown_path = "<stdin>"
+        else:
+            shown_path = path
+            text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except (OSError, UnicodeDecodeError) as e:
+        if as_json:
+            print(json.dumps({"ok": False, "error": str(e), "file": path}))
+        else:
+            print(f"{RED}✖ cannot read {path}: {e}{RESET}", file=sys.stderr)
+        return 2
+
+    cleaned, matches = _redact_text(text, advanced)
+    exit_code = 1 if matches else 0
+
+    if as_json:
+        print(json.dumps({
+            "ok": True,
+            "file": shown_path,
+            "secrets_found": len(matches),
+            "chars_before": len(text),
+            "chars_after": len(cleaned),
+            "detections": _matches_to_json(matches),
+            "redacted": cleaned,
+            "exit_code": exit_code,
+        }, indent=2))
+        return exit_code
+
+    # human output
+    if matches:
+        print(f"{AMBER}● {shown_path}{RESET} — {len(matches)} secret(s): {summarise(matches)}")
+        for m in matches:
+            # show line number for quick CI log scanning
+            line = text.count("\n", 0, m.get("start", 0)) + 1
+            print(f"  {DIM}L{line}{RESET} {AMBER}{m['pattern']}{RESET} → {m.get('mask', '[REDACTED]')}")
+    else:
+        print(f"{GREEN}✓ {shown_path}{RESET} — clean")
+    return exit_code
+
+
+def _run_pre_commit_mode(*, advanced: bool) -> int:
+    """Scan every git-staged text file. Prints a JSON report and exits
+    non-zero if anything was found so ``git commit`` is blocked.
+
+    Designed to be dropped into ``.git/hooks/pre-commit`` as:
+
+        #!/usr/bin/env sh
+        exec vibe-protect --pre-commit
+    """
+    import subprocess
+
+    try:
+        out = subprocess.check_output(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(json.dumps({"ok": False, "error": f"git unavailable: {e}"}))
+        return 2
+
+    staged = [p for p in out.splitlines() if p.strip()]
+    report = {
+        "ok": True,
+        "mode": "pre-commit",
+        "files_scanned": 0,
+        "files_with_secrets": 0,
+        "total_secrets": 0,
+        "findings": [],   # [{file, detections:[...]}, ...]
+    }
+    for rel in staged:
+        p = Path(rel)
+        if not p.is_file():  # skip deletes / submodule entries
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        # only scan "text-ish" files — binary blobs would fire spuriously
+        if "\x00" in text[:4096]:
+            continue
+        report["files_scanned"] += 1
+        _, matches = _redact_text(text, advanced)
+        if matches:
+            report["files_with_secrets"] += 1
+            report["total_secrets"] += len(matches)
+            report["findings"].append({
+                "file": rel,
+                "detections": _matches_to_json(matches),
+            })
+
+    exit_code = 1 if report["total_secrets"] else 0
+    report["exit_code"] = exit_code
+    print(json.dumps(report, indent=2))
+    return exit_code
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Vibe Protect — clipboard secret redactor")
     parser.add_argument("--log", help="Append each redaction event to a JSONL file")
@@ -148,7 +274,30 @@ def main() -> int:
         action="store_true",
         help="Generate a responsible-disclosure report template (no network calls)",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON instead of human text (for CI/CD pipelines). "
+             "Implied by --pre-commit.",
+    )
+    parser.add_argument(
+        "--file",
+        type=str,
+        metavar="PATH",
+        help="Scan a single file (or '-' for stdin) instead of watching the clipboard. "
+             "Exits with code 1 if any secret is found, 0 otherwise.",
+    )
+    parser.add_argument(
+        "--pre-commit",
+        action="store_true",
+        help="Run as a git pre-commit hook: scan every staged file, implies --json, "
+             "exits 1 if any staged line contains a secret (blocks the commit).",
+    )
     args = parser.parse_args()
+
+    # --pre-commit implies --json
+    if args.pre_commit:
+        args.json = True
 
     if args.version:
         print(f"vibe-protect v{current_version()}")
@@ -210,6 +359,21 @@ def main() -> int:
             print(f"{AMBER}{name:<28}{RESET} {desc}")
             print(f"{DIM}    e.g. {ex}{RESET}")
         return 0
+
+    # ------------------------------------------------------------------ #
+    # --file / --pre-commit  —  file-scan modes (never enter the         #
+    # clipboard-polling loop; both exit non-zero when secrets are found  #
+    # so they compose cleanly with CI and git hooks).                    #
+    # ------------------------------------------------------------------ #
+    if args.pre_commit:
+        return _run_pre_commit_mode(advanced=args.advanced)
+
+    if args.file is not None:
+        return _scan_file(
+            args.file,
+            advanced=args.advanced,
+            as_json=args.json,
+        )
 
     if not args.quiet:
         banner()
