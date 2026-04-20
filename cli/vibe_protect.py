@@ -31,6 +31,7 @@ except ImportError:
     sys.exit(1)
 
 from patterns import redact, PATTERNS
+from updater import check_for_update, print_update_banner, current_version
 
 
 # --- optional desktop notifications ------------------------------------------
@@ -84,7 +85,19 @@ def main() -> int:
     parser.add_argument("--no-notify", action="store_true", help="Disable desktop notifications")
     parser.add_argument("--interval", type=float, default=0.3, help="Polling interval (seconds)")
     parser.add_argument("--list-patterns", action="store_true", help="List patterns and exit")
+    parser.add_argument("--check-update", action="store_true", help="Check for a newer release and exit")
+    parser.add_argument("--no-update-check", action="store_true", help="Skip the startup update check")
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
     args = parser.parse_args()
+
+    if args.version:
+        print(f"vibe-protect v{current_version()}")
+        return 0
+
+    if args.check_update:
+        info = check_for_update(force=True)
+        print_update_banner(info)
+        return 0
 
     if args.list_patterns:
         for name, _, desc, ex in PATTERNS:
@@ -94,7 +107,10 @@ def main() -> int:
 
     if not args.quiet:
         banner()
-        print(f"{DIM}  {len(PATTERNS)} patterns active · polling every {args.interval}s · Ctrl-C to stop{RESET}\n")
+        print(f"{DIM}  v{current_version()} · {len(PATTERNS)} patterns active · polling every {args.interval}s · Ctrl-C to stop{RESET}")
+        if not args.no_update_check:
+            print_update_banner(check_for_update(force=False))
+        print()
 
     notify = _make_notifier(not args.no_notify)
     log_path = Path(args.log) if args.log else None

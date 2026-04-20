@@ -31,6 +31,7 @@ REPO_ROOT = ROOT_DIR.parent
 sys.path.insert(0, str(REPO_ROOT / "cli"))
 
 from patterns import PATTERNS as _PATTERNS_DEF, redact as _redact, UNION  # noqa: E402
+from updater import check_for_update, current_version  # noqa: E402
 
 load_dotenv(ROOT_DIR / ".env")
 
@@ -96,7 +97,13 @@ class Stats(BaseModel):
 # ---- endpoints -------------------------------------------------------------
 @api.get("/")
 async def root():
-    return {"service": "vibe-protect", "status": "armed", "patterns": len(_PATTERNS_DEF)}
+    return {"service": "vibe-protect", "status": "armed", "patterns": len(_PATTERNS_DEF), "version": current_version()}
+
+
+@api.get("/version")
+async def version_endpoint():
+    info = check_for_update(force=False)
+    return info.to_dict()
 
 
 @api.get("/patterns", response_model=List[Pattern])

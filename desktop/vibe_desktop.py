@@ -27,6 +27,7 @@ from tkinter import ttk
 
 import pyperclip  # noqa: E402
 from patterns import redact, PATTERNS  # noqa: E402
+from updater import check_for_update, current_version  # noqa: E402
 
 
 BG = "#0A0A0A"
@@ -146,11 +147,23 @@ class VibeApp:
         footer.pack(fill="x", padx=20, pady=(0, 14))
         tk.Label(
             footer,
-            text="polling @ 300ms · all processing happens locally · nothing leaves your machine",
+            text=f"v{current_version()} · polling @ 300ms · all processing happens locally · nothing leaves your machine",
             fg=MUTED,
             bg=BG,
             font=("Courier New", 9),
         ).pack(side="left")
+        self.update_lbl = tk.Label(
+            footer,
+            text="check for updates",
+            fg=MUTED,
+            bg=BG,
+            font=("Courier New", 9, "underline"),
+            cursor="hand2",
+        )
+        self.update_lbl.pack(side="right")
+        self.update_lbl.bind("<Button-1>", lambda _e: self._check_update(force=True))
+        # silent startup check
+        threading.Thread(target=lambda: self._check_update(force=False, silent=True), daemon=True).start()
 
     def _stat_card(self, parent, label, value):
         card = tk.Frame(parent, bg=SURFACE, highlightbackground=BORDER, highlightthickness=1)
@@ -253,6 +266,38 @@ class VibeApp:
     def _on_close(self):
         self._stop.set()
         self.root.destroy()
+
+    def _check_update(self, force: bool = False, silent: bool = False):
+        info = check_for_update(force=force)
+        def _apply():
+            if info.error and not silent:
+                self.update_lbl.configure(text="update check failed", fg=MUTED)
+                return
+            if info.is_update_available:
+                self.update_lbl.configure(
+                    text=f"▲ update available → v{info.latest}",
+                    fg=AMBER,
+                )
+                self.update_lbl.bind(
+                    "<Button-1>",
+                    lambda _e, url=info.release_url: self._open_url(url),
+                )
+            elif not silent:
+                self.update_lbl.configure(text=f"✓ v{info.current} · up to date", fg=MUTED)
+        try:
+            self.root.after(0, _apply)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _open_url(url: str):
+        if not url:
+            return
+        import webbrowser
+        try:
+            webbrowser.open(url, new=2)
+        except Exception:
+            pass
 
 
 def main():

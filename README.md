@@ -153,7 +153,8 @@ redaction engine into other tools.
 
 | Method | Route           | Description                                              |
 | ------ | --------------- | -------------------------------------------------------- |
-| GET    | `/api/`         | Health check                                             |
+| GET    | `/api/`         | Health check + current version                           |
+| GET    | `/api/version`  | Installed vs. latest release, throttled via the updater  |
 | GET    | `/api/patterns` | List all active patterns + examples                      |
 | POST   | `/api/redact`   | `{ text }` → `{ cleaned, matches, chars_before/after }`  |
 | POST   | `/api/track`    | Opt-in anonymous event counter (source, patterns, sizes) |
@@ -183,7 +184,11 @@ PRs welcome — especially:
 
 ## Privacy
 
-- **CLI, desktop, extension:** zero network calls. All matching is local.
+- **CLI, desktop, extension:** the only network call is an optional, throttled
+  *update check* against the public GitHub releases API (disabled via
+  `VP_DISABLE_UPDATE_CHECK=1`). All redaction matching is local.
+- The updater **never** downloads or executes a release asset automatically —
+  it just surfaces the release URL and suggests `pip install --upgrade`.
 - **Web playground:** the `/api/redact` endpoint stores *counts only*
   (which patterns matched, how many chars). Never the original text, never
   the redacted text, never an IP, never a user identifier.

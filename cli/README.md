@@ -49,3 +49,19 @@ See `python vibe_protect.py --list-patterns` for the full live list.
 | `--no-notify`      | Disable desktop notifications                  |
 | `--interval 0.3`   | Clipboard polling interval in seconds          |
 | `--list-patterns`  | Print the active pattern library and exit      |
+| `--check-update`   | Check GitHub for a newer release and exit      |
+| `--no-update-check`| Skip the non-blocking update check on startup  |
+| `--version`        | Print the installed version and exit           |
+
+### Environment variables
+
+| Variable                    | Meaning                                             |
+| --------------------------- | --------------------------------------------------- |
+| `VP_DISABLE_UPDATE_CHECK=1` | Fully disable the updater (no network calls at all) |
+| `VP_UPDATE_URL`             | Override the GitHub release API URL                 |
+| `VP_CACHE_DIR`              | Override the cache dir (default `~/.vibeprotect/`)  |
+
+The updater **never downloads or executes** a release asset automatically.
+When a newer version is available it prints a banner with the release URL and
+the suggested `pip install --upgrade` command — you review and install it
+yourself.

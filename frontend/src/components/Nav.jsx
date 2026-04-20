@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { Shield, Github, Download } from "lucide-react";
+import axios from "axios";
+import { Shield, Github, Download, ArrowUpRight } from "lucide-react";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const [versionInfo, setVersionInfo] = useState(null);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await axios.get(`${BACKEND_URL}/api/version`);
+        setVersionInfo(data);
+      } catch {
+        /* silently ignore */
+      }
+    };
+    load();
+    const iv = setInterval(load, 60 * 60 * 1000); // hourly
+    return () => clearInterval(iv);
+  }, []);
+
+  const current = versionInfo?.current || "1.0";
+  const hasUpdate = !!versionInfo?.is_update_available;
 
   return (
     <header
@@ -24,9 +46,28 @@ export default function Nav() {
           <span className="font-bold tracking-tight text-[15px]">
             vibe<span className="text-amber-400">.</span>protect
           </span>
-          <span className="hidden sm:inline text-[10px] font-mono text-zinc-500 ml-2 border border-white/10 px-1.5 py-0.5">
-            v1.0
+          <span
+            data-testid="nav-version-badge"
+            className={`hidden sm:inline text-[10px] font-mono ml-2 px-1.5 py-0.5 border ${
+              hasUpdate
+                ? "text-black bg-amber-400 border-amber-400"
+                : "text-zinc-500 border-white/10"
+            }`}
+          >
+            v{current}
           </span>
+          {hasUpdate && (
+            <a
+              href={versionInfo.release_url || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="nav-update-cta"
+              className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono text-amber-400 hover:text-amber-300 ml-1"
+              title={`Update available: ${versionInfo.latest}`}
+            >
+              ▲ {versionInfo.latest} <ArrowUpRight size={10} />
+            </a>
+          )}
         </a>
         <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-400 font-mono">
           <a href="#playground" className="hover:text-white transition-colors">playground</a>
