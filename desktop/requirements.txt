@@ -1,1 +1,6 @@
 pyperclip>=1.8.2
+# optional — enables system-tray icon and notifications
+# the app still runs fine without these
+pystray>=0.19.0
+pillow>=10.0.0
+plyer>=2.1.0
