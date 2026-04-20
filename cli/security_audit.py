@@ -399,7 +399,7 @@ class SecurityAuditor:
     # ---------- markdown ----------
     def _render_markdown(self, snap: Dict[str, Any]) -> str:
         lines = [
-            f"# Vibe Protect — security audit",
+            "# Vibe Protect — security audit",
             "",
             f"- started:  `{snap['audit_started_utc']}`",
             f"- finished: `{snap['audit_finished_utc']}`",
@@ -550,7 +550,7 @@ if __name__ == "__main__":
     path = auditor.generate_report(args.format)
 
     if not args.quiet:
-        print(f"=== Vibe Protect security audit ===")
+        print("=== Vibe Protect security audit ===")
         print(f"score: {snap['score']}/{snap['score_out_of']}  grade {snap['grade']}")
         for k, r in snap["results"].items():
             print(f"  {r['status']:>4}  [{r['weight']:>2}]  {k:<20}  {r['note']}")

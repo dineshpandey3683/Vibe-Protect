@@ -143,6 +143,11 @@ def main() -> int:
         choices=["json", "md", "html"],
         help="Run the automated security audit suite and write a report",
     )
+    parser.add_argument(
+        "--report-vuln",
+        action="store_true",
+        help="Generate a responsible-disclosure report template (no network calls)",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -193,6 +198,11 @@ def main() -> int:
         path = auditor.generate_report(args.security_audit)
         print(f"✓ security audit: {snap['score']}/{snap['score_out_of']} · grade {snap['grade']}")
         print(f"  report: {path}")
+        return 0
+
+    if args.report_vuln:
+        from report_vuln import generate_report
+        print(generate_report())
         return 0
 
     if args.list_patterns:
