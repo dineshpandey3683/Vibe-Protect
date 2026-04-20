@@ -31,6 +31,7 @@ REPO_ROOT = ROOT_DIR.parent
 sys.path.insert(0, str(REPO_ROOT / "cli"))
 
 from patterns import PATTERNS as _PATTERNS_DEF, redact as _redact, UNION  # noqa: E402
+from advanced_detector import AdvancedSecretDetector  # noqa: E402
 from updater import check_for_update, current_version  # noqa: E402
 
 load_dotenv(ROOT_DIR / ".env")
@@ -46,6 +47,7 @@ api = APIRouter(prefix="/api")
 # ---- models ----------------------------------------------------------------
 class RedactRequest(BaseModel):
     text: str
+    advanced: bool = False
 
 
 class Match(BaseModel):
@@ -54,6 +56,8 @@ class Match(BaseModel):
     start: int
     end: int
     mask: str
+    entropy: float = 0.0
+    reason: str = "pattern"
 
 
 class RedactResponse(BaseModel):
@@ -114,11 +118,22 @@ async def list_patterns():
     ]
 
 
+# shared advanced detector — safe to reuse across requests (compiled regexes only)
+_ADVANCED = AdvancedSecretDetector()
+
+
 @api.post("/redact", response_model=RedactResponse)
 async def redact_endpoint(body: RedactRequest):
     if body.text is None:
         raise HTTPException(400, "text is required")
-    cleaned, matches = _redact(body.text)
+    if body.advanced:
+        cleaned, matches = _ADVANCED.redact(body.text)
+    else:
+        cleaned, raw = _redact(body.text)
+        # ensure every match has the fields required by the Match model
+        matches = [
+            {**m, "entropy": 0.0, "reason": "pattern"} for m in raw
+        ]
     evt_patterns = [m["pattern"] for m in matches]
     chars_saved = max(0, len(body.text) - len(cleaned))
 

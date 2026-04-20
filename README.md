@@ -156,7 +156,7 @@ redaction engine into other tools.
 | GET    | `/api/`         | Health check + current version                           |
 | GET    | `/api/version`  | Installed vs. latest release, throttled via the updater  |
 | GET    | `/api/patterns` | List all active patterns + examples                      |
-| POST   | `/api/redact`   | `{ text }` → `{ cleaned, matches, chars_before/after }`  |
+| POST   | `/api/redact`   | `{ text, advanced? }` → `{ cleaned, matches, chars_before/after }` — pass `"advanced": true` for entropy-aware detection + context filtering + catch-all |
 | POST   | `/api/track`    | Opt-in anonymous event counter (source, patterns, sizes) |
 | GET    | `/api/feed`     | Last N anonymised events for the live ticker             |
 | GET    | `/api/stats`    | Aggregate counts powering the dashboard                  |

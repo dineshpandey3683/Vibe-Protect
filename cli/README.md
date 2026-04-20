@@ -16,11 +16,35 @@ pip install -r requirements.txt
 ## Run
 
 ```bash
-python vibe_protect.py                 # monitor with defaults
+python vibe_protect.py                    # standard mode (18 patterns)
+python vibe_protect.py --advanced         # entropy-aware + catch-all + custom rules
+python vibe_protect.py --init-custom-rules  # seed ~/.vibeprotect/custom_rules.json
 python vibe_protect.py --log events.jsonl
 python vibe_protect.py --list-patterns
 python vibe_protect.py --quiet --no-notify
 ```
+
+## Standard vs. Advanced mode
+
+**Standard** runs the 18 built-in regexes as-is. Fast, deterministic, no false
+negatives on real keys.
+
+**Advanced** (`--advanced`) adds three quality-of-life layers on top:
+
+1. **Shannon-entropy filtering** — for key/token-like patterns only, skips
+   matches whose entropy is below 3.5 bits/char (kills obvious placeholders
+   like `sk-YOUR_KEY_HERE`).
+2. **Context filtering** — for key/token-like patterns only, skips matches on
+   lines containing `example`, `sample`, `demo`, `placeholder`, `dummy`,
+   `fake` (reduces noise on doc/test files).
+3. **Entropy catch-all** — flags random-looking ≥24-char blobs that don't
+   match any known pattern but smell like secrets.
+4. **Custom rules** — loads your own regexes from `~/.vibeprotect/custom_rules.json`
+   (run `--init-custom-rules` to see an annotated example).
+
+Important: filters are applied **per pattern**. Low-entropy patterns (emails,
+IPs, credit cards, shell prompts, DB URLs, PEM blocks, SSH keys) are **always**
+matched regardless of entropy or context — otherwise we'd miss real secrets.
 
 ## What it catches
 

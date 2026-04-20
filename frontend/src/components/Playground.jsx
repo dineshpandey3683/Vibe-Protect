@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { PATTERNS, redact } from "@/lib/patterns";
-import { Zap, RotateCcw, Copy, Check } from "lucide-react";
+import { redactAdvanced } from "@/lib/advancedDetector";
+import { Zap, RotateCcw, Copy, Check, Sparkles } from "lucide-react";
 import axios from "axios";
 
 const SAMPLE = `# a few things you should NEVER paste into a chat window
@@ -47,9 +48,13 @@ function HighlightedOutput({ text, matches }) {
 export default function Playground() {
   const [input, setInput] = useState(SAMPLE);
   const [copied, setCopied] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const [serverVerified, setServerVerified] = useState(null); // null | boolean
 
-  const { cleaned, matches } = useMemo(() => redact(input), [input]);
+  const { cleaned, matches } = useMemo(
+    () => (advanced ? redactAdvanced(input) : redact(input)),
+    [input, advanced]
+  );
 
   // summary by pattern
   const summary = useMemo(() => {
@@ -76,7 +81,7 @@ export default function Playground() {
   // optional: re-verify server-side
   const verify = async () => {
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/redact`, { text: input });
+      const { data } = await axios.post(`${BACKEND_URL}/api/redact`, { text: input, advanced });
       setServerVerified(data.matches.length === matches.length);
       setTimeout(() => setServerVerified(null), 2200);
     } catch {
@@ -113,6 +118,20 @@ export default function Playground() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAdvanced((v) => !v)}
+              data-testid="playground-advanced-toggle"
+              aria-pressed={advanced}
+              title="Entropy-aware detection + context filtering + catch-all"
+              className={`inline-flex items-center gap-1.5 text-xs font-mono px-3 py-2 border transition-colors ${
+                advanced
+                  ? "bg-amber-400 text-black border-amber-400 hover:bg-amber-300"
+                  : "text-zinc-400 hover:text-white border-white/10 hover:border-white/30"
+              }`}
+            >
+              <Sparkles size={13} />
+              {advanced ? "advanced: ON" : "advanced: off"}
+            </button>
             <button
               onClick={reset}
               data-testid="playground-reset-btn"
