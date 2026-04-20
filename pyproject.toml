@@ -1,0 +1,108 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vibe-protect"
+version = "1.0.0"
+description = "Clipboard guardian — auto-redacts API keys, tokens, PII, PANs before they reach AI chats, Slack, or GitHub."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "Vibe Protect" }]
+keywords = [
+    "security", "clipboard", "secret-scanner", "redaction",
+    "dlp", "entropy", "soc2", "vibe-protect",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: MacOS X",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: X11 Applications",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Security :: Cryptography",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "pyperclip>=1.8.2",
+    "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+# Desktop-app features (Tkinter GUI already stdlib; plyer for notifications).
+desktop = ["plyer>=2.1.0"]
+# Enterprise & SSO features (YAML GPO/MDM parsing + JWT validation).
+enterprise = ["PyYAML>=6.0", "PyJWT>=2.8.0", "requests>=2.31.0"]
+# Everything.
+all = [
+    "plyer>=2.1.0",
+    "PyYAML>=6.0",
+    "PyJWT>=2.8.0",
+    "requests>=2.31.0",
+]
+# Dev / test tooling.
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.1",
+    "build>=1.0",
+    "twine>=4.0",
+]
+
+[project.urls]
+Homepage      = "https://github.com/vibeprotect/vibe-protect"
+Documentation = "https://github.com/vibeprotect/vibe-protect#readme"
+Issues        = "https://github.com/vibeprotect/vibe-protect/issues"
+Changelog     = "https://github.com/vibeprotect/vibe-protect/blob/main/CHANGELOG.md"
+Security      = "https://github.com/vibeprotect/vibe-protect/blob/main/SECURITY.md"
+
+[project.scripts]
+# Primary entry point: clipboard monitor + redact-pipe + scan commands.
+vibe-protect            = "vibe_protect:main"
+# Enterprise dispatcher: --build-chrome / --audit / --test-bug / etc.
+vibe-protect-enterprise = "vibe_protect_enterprise:main"
+
+# ---------------------------------------------------------------------------
+# Module layout
+# ---------------------------------------------------------------------------
+# We ship cli/*.py as flat top-level modules (``vibe_protect``,
+# ``advanced_detector``, ``audit_logger``, …). That keeps the wheel
+# mechanically identical to a dev checkout — the same ``sys.path``
+# manipulation the tests already do works verbatim post-install, so
+# the 105-case pytest regression suite is our wheel smoke-test.
+#
+# Trade-off acknowledged: a pip-install adds ~12 top-level names to the
+# user's environment. In exchange we avoid a full package-rename refactor
+# (would touch every test, script, and internal import). Can be tightened
+# into a proper ``vibe_protect`` namespace in a 2.0 release without
+# breaking any CLI-only consumer.
+[tool.setuptools]
+package-dir = { "" = "cli" }
+py-modules = [
+    "vibe_protect",
+    "vibe_protect_enterprise",
+    "patterns",
+    "advanced_detector",
+    "audit_logger",
+    "enterprise_config",
+    "security_audit",
+    "pattern_updater",
+    "production_updater",
+    "community_rules",
+    "updater",
+    "report_vuln",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt"]

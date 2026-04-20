@@ -211,6 +211,29 @@ that was NOT adopted verbatim):
   unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
   fixtures live under `/app/backend/tests/corpus/`.
 
+### `pip install vibe-protect` — PyPI packaging (2026-02)
+- `/app/pyproject.toml` — PEP 621 metadata, 3 extras (`desktop` /
+  `enterprise` / `all` / `dev`), minimum runtime deps (pyperclip +
+  cryptography only; everything else optional), two console scripts:
+  `vibe-protect` → `vibe_protect:main` and
+  `vibe-protect-enterprise` → `vibe_protect_enterprise:main`.
+- Module layout kept flat (`py-modules = [...]` + `package-dir = {"" = "cli"}`).
+  Trade-off: 12 top-level names land in site-packages, but the wheel is
+  mechanically identical to a dev checkout — same `sys.path` dance the
+  105-test pytest suite already does works verbatim post-install, so
+  the suite IS our wheel smoke-test. Can be tightened into a proper
+  `vibe_protect` namespace in a 2.0 breaking release.
+- `updater.current_version()` now falls back to `importlib.metadata.version`
+  so pip-installed wheels report the correct version.
+- `/app/.github/workflows/publish-pypi.yml` — Trusted-Publishing workflow
+  triggered by `v*.*.*` tags; no PyPI API token in secrets. Syncs
+  `pyproject.toml` version from the tag before build, runs `twine check`,
+  and uploads via OIDC.
+- End-to-end verified in an isolated venv: wheel builds cleanly, installs
+  from scratch with only 2 runtime deps, `vibe-protect --version` prints
+  `v1.0.0`, `--test-bug` detects real secrets correctly, and the Python
+  API (`from advanced_detector import AdvancedSecretDetector`) works.
+
 ### Hero "verified" badge (2026-02)
 - `/app/frontend/src/components/VerifiedBadge.jsx` — compact
   amber-on-black inline badge placed right below the hero CTAs.
@@ -256,7 +279,7 @@ that was NOT adopted verbatim):
 ## Prioritised backlog / future
 
 **P1**
-- Package CLI as a `pip install vibe-protect` with console script
+- Real PNG extension icons + Chrome Web Store / Firefox AMO publish
 - Publish the extension to Chrome Web Store + Firefox Add-ons
 - Real PNG icons for the extension (currently placeholder-only)
 - System-tray icon (`pystray`) for the desktop app + auto-start on login

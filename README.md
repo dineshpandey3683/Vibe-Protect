@@ -66,7 +66,25 @@ Run `python cli/vibe_protect.py --list-patterns` for the live list.
 
 ## Quick start
 
-### CLI (30 seconds)
+### Install via pip (preferred)
+
+```bash
+pip install vibe-protect
+
+# launch the clipboard monitor
+vibe-protect
+
+# or the enterprise dispatcher
+vibe-protect-enterprise --audit
+vibe-protect-enterprise --build-chrome
+vibe-protect-enterprise --test-bug "sk-proj-Xy7Qw9…"   # local-only, no disk writes
+```
+
+Optional extras: `pip install "vibe-protect[desktop]"` (Tkinter GUI +
+notifications), `pip install "vibe-protect[enterprise]"` (GPO/MDM +
+SSO JWT validation), or `pip install "vibe-protect[all]"`.
+
+### CLI (from source, 30 seconds)
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/vibe-protect.git

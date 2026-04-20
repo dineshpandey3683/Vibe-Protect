@@ -43,14 +43,25 @@ REQUEST_TIMEOUT = 6.0
 
 
 def current_version() -> str:
-    """Read the repo-level VERSION file (falls back to 0.0.0)."""
+    """Best-effort version lookup.
+
+    1. Repo-level ``VERSION`` file (source checkout).
+    2. ``importlib.metadata`` — populated when pip-installed.
+    3. ``"0.0.0"`` as a last-resort fallback.
+    """
     p = _REPO_ROOT / "VERSION"
     if p.exists():
         try:
-            return p.read_text().strip() or "0.0.0"
+            v = p.read_text().strip()
+            if v:
+                return v
         except OSError:
             pass
-    return "0.0.0"
+    try:
+        from importlib.metadata import version as _pkg_version  # py3.8+
+        return _pkg_version("vibe-protect")
+    except Exception:
+        return "0.0.0"
 
 
 def _tuple(v: str):
