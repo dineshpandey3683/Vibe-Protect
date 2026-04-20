@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ArrowRight, Terminal, Chrome, Monitor } from "lucide-react";
+import VerifiedBadge from "./VerifiedBadge";
 
 // pre-scripted "typing then redacting" hero demo
 const LINES = [
@@ -126,6 +127,7 @@ export default function Hero() {
             >
               Install on your machine
             </a>
+            <VerifiedBadge />
           </div>
           <div className="mt-10 flex items-center gap-6 text-[11px] font-mono text-zinc-500">
             <span className="flex items-center gap-2"><Terminal size={13} className="text-amber-400"/> CLI</span>

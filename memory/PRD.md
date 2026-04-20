@@ -211,6 +211,18 @@ that was NOT adopted verbatim):
   unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
   fixtures live under `/app/backend/tests/corpus/`.
 
+### Hero "verified" badge (2026-02)
+- `/app/frontend/src/components/VerifiedBadge.jsx` — compact
+  amber-on-black inline badge placed right below the hero CTAs.
+  Fetches live numbers from `stats.json` (same source as the Receipts
+  panel — no hardcoded claims) and renders
+  `✓ verified · 100% detection · 0% false-positive ↗`. Click →
+  smooth-scrolls to `#receipts` and updates the URL hash, so a
+  visitor can forward that URL and have the recipient land on the
+  evidence panel directly. Hides silently if `stats.json` isn't yet
+  generated (fresh checkout without CI) — better no badge than a
+  broken claim.
+
 ### Credit-card regex expansion + Luhn validation + brand masks (2026-02)
 - Expanded `credit_card` regex in `/app/cli/patterns.py` to cover
   **7 brands**: Visa, Mastercard 5-series, **Mastercard 2-series
