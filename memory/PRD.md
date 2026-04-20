@@ -115,9 +115,18 @@ base64 blobs.
   90% threshold is rendered in amber so a CISO can scan the list at a
   glance. Includes a **"copy as markdown"** button that builds a
   paste-ready evidence table (`Pattern | Detection | Hit/Total | Trend`
-  with Unicode-block ASCII sparklines `▁▂▃▄▅▆▇█` inline) and copies it
-  to the clipboard — one click turns the audit trail into something a
-  security reviewer can drop straight into a vendor questionnaire.
+  with Unicode-block ASCII sparklines `▁▂▃▄▅▆▇█` inline) and a
+  **"copy share link"** button that URL-encodes the snapshot into a
+  persistent audit artifact (see below).
+- `/app/frontend/src/lib/shareLink.js` — pure base64url codec for
+  `#evidence=<payload>` URL fragments. Payload schema is minimal (keys
+  renamed to 1-3 chars, pp packed as `[hit,total]` tuples) so a full
+  18-pattern snapshot fits in ~730 chars / ~770-char URL — email-safe
+  (< 2083 limit) and Slack link-preview-compatible. On load, Receipts
+  auto-detects the hash, substitutes the decoded snapshot for the live
+  stats.json, auto-opens the detection drawer, and renders an amber
+  "viewing forwarded evidence" banner with a "reset to live" button.
+  Zero server storage — the forwarded link IS the evidence.
 - `/app/frontend/src/components/Receipts.jsx` — fetches stats.json and
   stats-history.jsonl, renders three metric tiles (detection rate %,
   FP rate %, patterns + ML entropy count), each with an 88×26 sparkline

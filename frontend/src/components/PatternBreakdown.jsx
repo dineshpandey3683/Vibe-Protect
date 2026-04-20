@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Link2 } from "lucide-react";
 import Sparkline from "./Sparkline";
+import { buildShareUrl } from "../lib/shareLink";
 
 /**
  * PatternBreakdown — per-pattern audit-trail rendered inside a Receipts
@@ -86,8 +87,10 @@ export default function PatternBreakdown({
   threshold = 0.9,
   generatedAt,
   version,
+  snapshot,
 }) {
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const names = Object.keys(perPattern || {});
   if (!names.length) return null;
 
@@ -124,35 +127,74 @@ export default function PatternBreakdown({
     }
   };
 
+  const handleCopyLink = async () => {
+    const url = buildShareUrl(snapshot);
+    if (!url) return;
+    try {
+      await copyText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      // eslint-disable-next-line no-alert
+      alert("Copy failed — your browser blocked clipboard access.");
+    }
+  };
+
   return (
     <>
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
         <div className="font-mono text-[10px] tracking-[0.16em] text-zinc-500 uppercase">
           {rows.length} controls · sorted by detection rate
         </div>
-        <button
-          type="button"
-          onClick={handleCopy}
-          data-testid="pattern-breakdown-copy-md"
-          aria-live="polite"
-          className={`inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] tracking-wide transition-colors ${
-            copied
-              ? "border-emerald-400/60 text-emerald-400 bg-emerald-400/5"
-              : "border-white/15 text-zinc-300 hover:border-amber-400 hover:text-amber-400 hover:bg-amber-400/5"
-          }`}
-        >
-          {copied ? (
-            <>
-              <Check size={13} />
-              <span>copied · paste into your security review</span>
-            </>
-          ) : (
-            <>
-              <Copy size={13} />
-              <span>copy as markdown</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            data-testid="pattern-breakdown-copy-link"
+            aria-live="polite"
+            disabled={!snapshot}
+            className={`inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] tracking-wide transition-colors disabled:opacity-40 ${
+              linkCopied
+                ? "border-emerald-400/60 text-emerald-400 bg-emerald-400/5"
+                : "border-white/15 text-zinc-300 hover:border-amber-400 hover:text-amber-400 hover:bg-amber-400/5"
+            }`}
+          >
+            {linkCopied ? (
+              <>
+                <Check size={13} />
+                <span>link copied · forward to your team</span>
+              </>
+            ) : (
+              <>
+                <Link2 size={13} />
+                <span>copy share link</span>
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            data-testid="pattern-breakdown-copy-md"
+            aria-live="polite"
+            className={`inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] tracking-wide transition-colors ${
+              copied
+                ? "border-emerald-400/60 text-emerald-400 bg-emerald-400/5"
+                : "border-white/15 text-zinc-300 hover:border-amber-400 hover:text-amber-400 hover:bg-amber-400/5"
+            }`}
+          >
+            {copied ? (
+              <>
+                <Check size={13} />
+                <span>copied · paste into your security review</span>
+              </>
+            ) : (
+              <>
+                <Copy size={13} />
+                <span>copy as markdown</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Shield, Brain, AlertCircle, ChevronDown } from "lucide-react";
+import { CheckCircle2, Shield, Brain, AlertCircle, ChevronDown, LinkIcon, X } from "lucide-react";
 import Sparkline from "./Sparkline";
 import PatternBreakdown from "./PatternBreakdown";
+import { decodeFromHash } from "../lib/shareLink";
 
 /**
  * Receipts — proof-points auto-generated from /stats.json and sparklined
@@ -19,8 +20,21 @@ export default function Receipts() {
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
   const [expanded, setExpanded] = useState(null);   // tile id or null
+  const [shared, setShared] = useState(null);       // decoded snapshot from URL hash
 
   useEffect(() => {
+    // If the URL contains #evidence=…, that snapshot takes priority over
+    // the live stats.json fetch. Forwarded share-links become persistent
+    // audit artifacts — the recipient sees exactly the numbers the
+    // sender saw at the time of snapshot, regardless of later CI runs.
+    const decoded = decodeFromHash();
+    if (decoded) {
+      setShared(decoded);
+      setStats(decoded);
+      setExpanded("detection");   // auto-expand so the evidence is visible
+      return;
+    }
+
     const base = process.env.PUBLIC_URL || "";
     fetch(`${base}/stats.json`, { cache: "no-cache" })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -42,6 +56,20 @@ export default function Receipts() {
       })
       .catch(() => {});
   }, []);
+
+  const resetToLive = () => {
+    // clear the hash, re-fetch live data
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    setShared(null);
+    setExpanded(null);
+    const base = process.env.PUBLIC_URL || "";
+    fetch(`${base}/stats.json`, { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(setStats)
+      .catch(() => {});
+  };
 
   if (!stats) return null;
 
@@ -127,6 +155,38 @@ export default function Receipts() {
           </div>
         </div>
 
+        {shared && (
+          <div
+            data-testid="receipts-shared-banner"
+            className="mb-6 flex items-center justify-between gap-4 border border-amber-400/40 bg-amber-400/[0.06] px-4 py-3 flex-wrap"
+          >
+            <div className="flex items-center gap-3 text-sm text-amber-100">
+              <LinkIcon size={16} className="text-amber-400 shrink-0" />
+              <div>
+                <div className="font-mono text-[11px] tracking-[0.14em] uppercase text-amber-400">
+                  viewing forwarded evidence
+                </div>
+                <div className="mt-1 text-zinc-300 font-mono text-[12px]">
+                  generated{" "}
+                  <span className="text-white">{generated}</span>
+                  {shared.version && (
+                    <> · v{shared.version}</>
+                  )}
+                  {" "}· numbers pinned to that build — not live
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={resetToLive}
+              data-testid="receipts-reset-live"
+              className="inline-flex items-center gap-1.5 border border-amber-400/40 px-3 py-1.5 font-mono text-[11px] tracking-wide text-amber-400 hover:bg-amber-400/10 transition-colors"
+            >
+              <X size={12} /> reset to live
+            </button>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-px bg-white/10 border border-white/10">
           {items.map((it) => {
             const isExpandable = !!it.expandable;
@@ -206,6 +266,7 @@ export default function Receipts() {
               threshold={0.9}
               generatedAt={stats.generated_at}
               version={stats.version}
+              snapshot={stats}
             />
           </div>
         )}
