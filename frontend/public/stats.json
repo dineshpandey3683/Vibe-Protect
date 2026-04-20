@@ -1,5 +1,6 @@
 {
-  "generated_at": "2026-04-20T05:17:00+00:00",
+  "generated_at": "2026-04-20T05:26:17+00:00",
+  "date": "2026-04-20",
   "version": "1.0.0",
   "detection_rate": 1.0,
   "false_positive_rate": 0.0,
@@ -7,6 +8,7 @@
   "false_positives_tested": 158,
   "patterns_active": 18,
   "ml_entropy_enabled": true,
+  "seed": false,
   "per_pattern": {
     "anthropic_api_key": {
       "hit": 30,

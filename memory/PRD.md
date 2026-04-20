@@ -100,16 +100,23 @@ base64 blobs.
 
 ### Live "Receipts" panel on the web dashboard
 - `/app/scripts/generate_stats.py` — re-computes detection-rate / FP-rate
-  from the same fixtures the pytest corpus asserts on, writes
-  `/app/frontend/public/stats.json` (stable schema; version + ISO
-  timestamp + per-pattern breakdown included).
-- `/app/frontend/src/components/Receipts.jsx` — fetches stats.json at
-  runtime and renders three metric tiles (detection rate %, FP rate %,
-  patterns + ML entropy count) plus a generated-at stamp. Wired into
-  `App.js` between Hero and Playground, plus a `#receipts` nav link.
-- `/app/.github/workflows/ci.yml` — runs the full pytest corpus on every
-  push + PR, regenerates stats.json, and uploads it as a 30-day build
-  artifact. Numbers on the landing page are now tied to a green build.
+  from the same fixtures the pytest corpus asserts on, writes both
+  `/app/frontend/public/stats.json` (latest snapshot) and
+  `/app/frontend/public/stats-history.jsonl` (rolling 30-day window,
+  idempotent per UTC date). Supports `--seed-history N` for initial
+  bootstrapping; seeded entries are flagged `"seed": true` so they can
+  be visually distinguished from real CI-generated snapshots.
+- `/app/frontend/src/components/Sparkline.jsx` — dependency-free inline
+  SVG polyline with auto-scaling + seed-vs-real dashed-vs-solid rendering.
+- `/app/frontend/src/components/Receipts.jsx` — fetches stats.json **and**
+  stats-history.jsonl, renders three metric tiles (detection rate %, FP
+  rate %, patterns + ML entropy count), each with a 88×26 sparkline in
+  the top-right corner showing the 30-day trend. Colour shifts to amber
+  if FP rate creeps above 1%. Wired into `App.js` between Hero and
+  Playground, plus a `#receipts` nav link.
+- `/app/.github/workflows/ci.yml` — runs pytest corpus on every push/PR,
+  downloads prior `stats-history` artifact, regenerates both files, and
+  re-uploads both (stats.json 30-day retention, stats-history 90-day).
 
 ### Pattern-corpus regression suite
 - 540 synthetic positives (30 per pattern, seeded, distribution-faithful;

@@ -39,7 +39,14 @@ jobs:
                  backend/tests/test_audit_sqlite.py \
                  backend/tests/test_enterprise_dispatcher.py -v
 
-      - name: Regenerate stats.json
+      - name: Restore previous stats history (if any)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: stats-history
+          path: frontend/public/
+
+      - name: Regenerate stats.json + append to stats-history.jsonl
         run: python scripts/generate_stats.py
 
       - name: Show stats.json
@@ -51,3 +58,10 @@ jobs:
           name: stats-json
           path: frontend/public/stats.json
           retention-days: 30
+
+      - name: Upload rolling stats-history.jsonl
+        uses: actions/upload-artifact@v4
+        with:
+          name: stats-history
+          path: frontend/public/stats-history.jsonl
+          retention-days: 90
