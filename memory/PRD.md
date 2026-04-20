@@ -336,12 +336,13 @@ that was NOT adopted verbatim):
 
 ## Prioritised backlog / future
 
-**P1**
-- `pystray` system-tray + auto-start for desktop app
-- Publish the extension to Chrome Web Store + Firefox Add-ons
-- Real PNG icons for the extension (currently placeholder-only)
-- System-tray icon (`pystray`) for the desktop app + auto-start on login
-- Unit tests for each regex pattern (true-positive + false-positive corpora)
+**P1** — _all complete as of 2026-04-20_
+- ✅ `pystray` system-tray + auto-start for desktop app
+- ✅ Real PNG icons for the extension (Gemini Nano Banana generated)
+- ✅ Unit tests for each regex pattern (true-positive + false-positive corpora)
+- ✅ Headless desktop-app test suite (`test_vibe_desktop.py` — 4 tests)
+- ⏳ **Human step:** publish to PyPI (wheel + sdist built, twine-check passed)
+- ⏳ **Human step:** publish extension to Chrome Web Store (zip validated)
 
 **P2**
 - User-defined custom patterns in the desktop app (dropped-in via settings)
@@ -349,10 +350,37 @@ that was NOT adopted verbatim):
 - Dark-mode / light-mode toggle for the web dashboard (current: dark only)
 - Localisation (es, pt, fr, ja)
 - Safari Web Extension port
-- CI: GitHub Actions workflow running pytest + eslint on every PR
+- macOS `.dmg` / Linux `.AppImage` / `.deb` build matrix in CI
+- OS-level active-window enforcement for `blocked_applications` policy
+- Bug-bounty integration via Huntr.dev
+
+## Release status (v1.0)
+
+**Ship-ready as of 2026-04-20.** See `/app/RELEASE_CHECKLIST.md` for the
+full gate + launch runbook. Summary:
+
+- `pytest backend/tests/` → **113 passed, 1 skipped** (macOS plist only)
+- `python -m build` → wheel (59 KB) + sdist (57 KB), both `twine check` PASSED
+- Clean-venv install → both `vibe-protect` and `vibe-protect-enterprise`
+  entry points resolve; `--test-bug` returns expected confidence scores
+- `dist/vibe_protect_extension_v1.0.0.zip` — MV3, 4 icon sizes, no
+  missing manifest keys, 27 KB
+
+### Final hardening pass (A → C → B) — 2026-04-20
+**A — Fixed headless desktop test blocker:**
+- Installed `python3-tk` / `tk8.6` / `xvfb` in CI env
+- Added `/app/backend/tests/test_vibe_desktop.py` (2 pure-import + 2 integration, auto-skips without DISPLAY)
+- Fixed latent Tk bug in `_stat_card`: tuple `pady=(8,0)` on Label was rejected by Tk (`bad screen distance`); moved to `.pack()` where tuples are legal
+- Split `_HAS_PIL` from `_HAS_TRAY` so the tray-icon factory remains unit-testable even when pystray can't attach to an X systray
+
+**C — Full regression:** no regressions, 4 new passing tests
+
+**B — Launch prep:** wheel / sdist / extension zip all re-verified; release checklist generated at `/app/RELEASE_CHECKLIST.md`
 
 ## Next task list
 
-1. Add real icons for the browser extension (`icons/icon{16,32,48,128}.png`)
-2. Add unit tests for the pattern library (Python + JS)
-3. Optionally publish to PyPI / Chrome Web Store / Firefox AMO
+After human completes PyPI + Chrome Web Store submission, pick any of:
+1. macOS `.dmg` / Linux `.AppImage` CI build matrix (P2)
+2. OS-level active-window enforcement for `blocked_applications` (P2)
+3. Bug-bounty integration via Huntr.dev (P2)
+

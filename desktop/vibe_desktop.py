@@ -51,9 +51,14 @@ except Exception:
     _HAS_NOTIFY = False
 
 try:
-    import pystray  # type: ignore
     from PIL import Image, ImageDraw  # type: ignore
-    _HAS_TRAY = True
+    _HAS_PIL = True
+except Exception:
+    _HAS_PIL = False
+
+try:
+    import pystray  # type: ignore
+    _HAS_TRAY = _HAS_PIL  # tray needs an icon, which needs PIL
 except Exception:
     _HAS_TRAY = False
 
@@ -185,10 +190,10 @@ class VibeApp:
         card = tk.Frame(parent, bg=SURFACE, highlightbackground=BORDER, highlightthickness=1)
         card.pack(side="left", fill="x", expand=True, padx=(0, 8))
         tk.Label(card, text=label, fg=MUTED, bg=SURFACE,
-                 font=("Courier New", 9), anchor="w", padx=12, pady=(8, 0)).pack(fill="x")
+                 font=("Courier New", 9), anchor="w", padx=12, pady=0).pack(fill="x", pady=(8, 0))
         val = tk.Label(card, text=value, fg=FG, bg=SURFACE,
-                       font=("Courier New", 22, "bold"), anchor="w", padx=12, pady=(0, 10))
-        val.pack(fill="x")
+                       font=("Courier New", 22, "bold"), anchor="w", padx=12, pady=0)
+        val.pack(fill="x", pady=(0, 10))
         return val
 
     # ----------------------------------------------------------- monitor tab
@@ -465,6 +470,8 @@ class VibeApp:
 
     def _make_tray_icon(self):
         """Generate a 64x64 amber shield icon programmatically (no file needed)."""
+        if not _HAS_PIL:
+            raise RuntimeError("PIL not available")
         img = Image.new("RGBA", (64, 64), (10, 10, 10, 0))
         d = ImageDraw.Draw(img)
         # amber rounded square
