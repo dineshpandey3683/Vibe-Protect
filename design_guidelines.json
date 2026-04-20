@@ -1,0 +1,110 @@
+{
+  "theme": "Dark Theme",
+  "archetype": "4 (Swiss & High-Contrast) + Terminal/Tech influence",
+  "vibe": "Terminal/Technical Aesthetic, Modern DevTool, High contrast, Objective, Sharp, Trustworthy",
+  "colors": {
+    "background": "#0A0A0A",
+    "surface": "#121212",
+    "surface_elevated": "#1A1A1A",
+    "primary_accent": "#FACC15",
+    "primary_accent_hover": "#FDE047",
+    "secondary_accent": "#475569",
+    "text_primary": "#FAFAFA",
+    "text_secondary": "#A1A1AA",
+    "border_color": "rgba(255, 255, 255, 0.08)",
+    "redaction_bg": "#422006",
+    "redaction_text": "#FACC15"
+  },
+  "typography": {
+    "headings_font": "Cabinet Grotesk",
+    "body_font": "IBM Plex Sans",
+    "mono_font": "JetBrains Mono",
+    "scale": {
+      "h1": "text-5xl md:text-6xl tracking-tighter font-bold text-white",
+      "h2": "text-3xl md:text-4xl tracking-tight font-bold text-white",
+      "h3": "text-xl md:text-2xl font-semibold text-white",
+      "body": "text-base leading-relaxed text-zinc-400",
+      "code": "text-sm font-mono tracking-tight text-zinc-300"
+    }
+  },
+  "spacing_and_layout": {
+    "generous_padding": true,
+    "bento_grid": "Use Mode B: 'The Control Room' grid format for data-heavy sections. Tight gaps (gap-4 or gap-6).",
+    "container_padding": "px-6 md:px-12 lg:px-24 py-20",
+    "optical_alignment": "Apply 1px borders to separate structural areas. Never center-align code or text blocks."
+  },
+  "surface_strategies": [
+    {
+      "name": "Grid Borders (The Technical Look)",
+      "description": "Expose the skeleton. Container uses border-collapse style layout. Items have subtle borders.",
+      "application": "Pattern Library, Stats Panel, Feature Lists"
+    },
+    {
+      "name": "Retro-Futurism (The Terminal Look)",
+      "description": "Deep black background with sharp amber text for code/data blocks, solid 1px borders.",
+      "application": "Playground Area, Live Redaction Feed, Code Snippets"
+    }
+  ],
+  "components": [
+    {
+      "name": "Header / Nav",
+      "styles": "Sticky, glassmorphism disabled. Solid #0A0A0A background with a hard 1px border-b border-white/10. Include Github link and primary 'Download' CTA.",
+      "testing": "data-testid='main-navigation'"
+    },
+    {
+      "name": "Hero Section",
+      "styles": "Massive header. Left-aligned text. Visual focus on a typing animation that gets instantly redacted into Amber blocks. Hero background uses the provided dark metallic texture with opacity-10 to break digital flatness.",
+      "testing": "data-testid='hero-section'"
+    },
+    {
+      "name": "Live Playground",
+      "styles": "Two-pane textarea or split screen. Left: input. Right: output with syntax highlighting and highlighted redacted sections (e.g. text blocked out in solid Amber rectangles). Uses JetBrains Mono exclusively. Container: border border-white/10 rounded-sm bg-[#0A0A0A].",
+      "testing": "data-testid='live-playground-container'"
+    },
+    {
+      "name": "Pattern Library",
+      "styles": "Bento grid 'Control Room' mode. 1px subtle borders, flat backgrounds (#121212). Hover: slight lift, border color darkens to Amber-500/30. Use monospace overlines for pattern names.",
+      "testing": "data-testid='pattern-library-grid'"
+    },
+    {
+      "name": "Stats Panel",
+      "styles": "Grid borders. Monospace numbers (text-5xl or larger). Muted labels.",
+      "testing": "data-testid='stats-panel'"
+    },
+    {
+      "name": "Downloads Cards",
+      "styles": "Flat, rectangular, dense styles. Include copy-to-clipboard icons for the curl/install commands. Background #121212, hover: bg-[#1A1A1A].",
+      "testing": "data-testid='downloads-section'"
+    },
+    {
+      "name": "Recent Redactions Feed",
+      "styles": "Uses `react-fast-marquee`. Monospace, low contrast (Zinc-500 text on Black background), displaying anonymized streams like '[REDACTED API KEY] -> xxxxxxxxxxxx'.",
+      "testing": "data-testid='live-feed-ticker'"
+    }
+  ],
+  "motion_and_interactions": {
+    "hover_states": "Always explicitly set text color on hover. Use scale transformations sparingly. Favor border-color shifts and background lightening.",
+    "redaction_animation": "Fast, crisp transition. Scale-x from 0 to 1 on the redaction bar to look like a censor block hitting the text.",
+    "accessibility": "Respect prefers-reduced-motion. High contrast focus rings (ring-2 ring-amber-500)."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1763805508094-901f2a79ff77?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxkYXJrJTIwdGVjaCUyMHRleHR1cmV8ZW58MHx8fHwxNzc2NjUxNDQ1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract dark metallic curves with textured surfaces. Use as a low-opacity (10-20%) background overlay in the hero or footer sections.",
+        "category": "hero_background_overlay"
+      }
+    ],
+    "icons_strategy": "Install and use `lucide-react`. Use sharp, technical icons (Terminal, Shield, Key, Copy, Download). Avoid soft, rounded icons."
+  },
+  "instructions_to_main_agent": [
+    "Install fonts via Google Fonts or Fontsource: Cabinet Grotesk, IBM Plex Sans, and JetBrains Mono.",
+    "Implement pure HTML/Tailwind for structural marketing layouts, avoiding standard Shadcn card constraints where bento/grid borders are needed.",
+    "Use Shadcn only for complex interactives, but customize their borders and radii to be flat (rounded-none or rounded-sm max).",
+    "Do not use generic gradients. Use solid colors with 1px borders or subtle noise overlays. Tint neutral greys slightly cool or warm.",
+    "Add 'data-testid' to all interactive elements and sections as defined.",
+    "For the Redaction Playground, build a robust visual diff view. Highlight matched secrets in Amber (#FACC15) with dark text or as blocked-out rectangles.",
+    "Force dark mode via Tailwind classes (bg-black text-white). Do not add a light mode toggle.",
+    "Ensure 'Inter' is NOT used. Use the specified typographies strictly."
+  ]
+}
