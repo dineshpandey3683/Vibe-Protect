@@ -70,20 +70,59 @@ def build_chrome() -> int:
     if not EXTENSION_DIR.exists():
         print(f"✖ extension dir not found: {EXTENSION_DIR}", file=sys.stderr)
         return 2
+
+    # Fail-fast: every icon size referenced by manifest.json must exist as
+    # a real PNG of the correct dimensions. Catches the most common
+    # pre-submission footgun (placeholder SVG / README shipped to the
+    # Chrome Web Store and rejected on review).
+    required_sizes = (16, 32, 48, 128)
+    icons_dir = EXTENSION_DIR / "icons"
+    missing: list[str] = []
+    wrong_size: list[str] = []
+    for s in required_sizes:
+        p = icons_dir / f"icon{s}.png"
+        if not p.exists():
+            missing.append(p.name)
+            continue
+        # lightweight PNG size read — first 24 bytes contain IHDR
+        with p.open("rb") as f:
+            head = f.read(24)
+        if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n":
+            missing.append(f"{p.name} (not a PNG)")
+            continue
+        w = int.from_bytes(head[16:20], "big")
+        h = int.from_bytes(head[20:24], "big")
+        if (w, h) != (s, s):
+            wrong_size.append(f"{p.name} is {w}×{h} (expected {s}×{s})")
+    if missing or wrong_size:
+        print("✖ extension icons not ready for Chrome Web Store:", file=sys.stderr)
+        for n in missing:
+            print(f"   · missing: {n}", file=sys.stderr)
+        for n in wrong_size:
+            print(f"   · wrong size: {n}", file=sys.stderr)
+        print(
+            "   run `python scripts/generate_icons.py` to regenerate all four.",
+            file=sys.stderr,
+        )
+        return 2
+
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     zip_path = DIST_DIR / f"vibe_protect_extension_v{VERSION}.zip"
 
-    # Exclude any editor cruft or previously generated zips.
-    exclude = {".DS_Store", "Thumbs.db"}
+    # Exclude any editor cruft, the master icon (not needed in the zip),
+    # or previously generated zips.
+    exclude_names = {".DS_Store", "Thumbs.db", "_master_1024.png"}
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in EXTENSION_DIR.rglob("*"):
-            if not f.is_file() or f.name in exclude:
+            if not f.is_file() or f.name in exclude_names:
                 continue
             zf.write(f, f.relative_to(EXTENSION_DIR))
 
     print(f"✅ Chrome extension packaged: {zip_path}")
     print(f"   size: {zip_path.stat().st_size / 1024:.1f} KB")
     print("   Upload at: https://chrome.google.com/webstore/devconsole")
+    print("   Listing copy: /app/docs/chrome-store/listing.md")
+    print("   Privacy policy: /app/docs/chrome-store/privacy-policy.md")
     return 0
 
 

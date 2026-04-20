@@ -211,6 +211,31 @@ that was NOT adopted verbatim):
   unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
   fixtures live under `/app/backend/tests/corpus/`.
 
+### Chrome Web Store submission bundle (2026-02)
+- `/app/scripts/generate_icons.py` — one-shot pipeline that asks
+  Gemini Nano Banana (`gemini-3.1-flash-image-preview` via
+  `emergentintegrations.LlmChat`) for a 1024×1024 master icon (amber
+  shield with a redaction-bar glyph on a near-black tile), then Pillow
+  down-samples with Lanczos to `icon16.png` / `icon32.png` /
+  `icon48.png` / `icon128.png` inside `/app/extension/icons/`.
+  Atomic write via `.tmp` + rename.
+- `vibe_protect_enterprise.py --build-chrome` now **fails fast** if any
+  required icon is missing, isn't a PNG, or has the wrong dimensions
+  (reads PNG IHDR directly — no external deps). Master icon
+  `_master_1024.png` is explicitly excluded from the shipped zip.
+- `/app/docs/chrome-store/listing.md` — copy-paste-ready submission
+  metadata: name ≤ 45 chars, 132-char short description, long
+  description, category, keywords, permission justifications for every
+  `activeTab` / `storage` / `scripting` / `clipboardRead` request, and
+  a screenshots-to-capture checklist (1280×800 each).
+- `/app/docs/chrome-store/privacy-policy.md` — zero-telemetry privacy
+  policy matching the extension's actual behaviour, with a
+  ready-to-paste mapping for Google's "What data your extension handles"
+  disclosure form.
+- End-to-end verified: icons render cleanly (Gemini-analysed 8/10
+  readability at 16×16), `--build-chrome` produces a 26.7 KB zip
+  containing only the real PNGs + MV3 assets, submission docs in place.
+
 ### `pip install vibe-protect` — PyPI packaging (2026-02)
 - `/app/pyproject.toml` — PEP 621 metadata, 3 extras (`desktop` /
   `enterprise` / `all` / `dev`), minimum runtime deps (pyperclip +
@@ -279,7 +304,7 @@ that was NOT adopted verbatim):
 ## Prioritised backlog / future
 
 **P1**
-- Real PNG extension icons + Chrome Web Store / Firefox AMO publish
+- `pystray` system-tray + auto-start for desktop app
 - Publish the extension to Chrome Web Store + Firefox Add-ons
 - Real PNG icons for the extension (currently placeholder-only)
 - System-tray icon (`pystray`) for the desktop app + auto-start on login
