@@ -1,7 +1,8 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { PATTERNS, redact } from "@/lib/patterns";
 import { redactAdvanced } from "@/lib/advancedDetector";
-import { Zap, RotateCcw, Copy, Check, Sparkles } from "lucide-react";
+import { buildReceiptUrl, decodeClipFromHash, decodeReceiptFromHash } from "@/lib/shareLink";
+import { Zap, RotateCcw, Copy, Check, Sparkles, Link as LinkIcon, Receipt } from "lucide-react";
 import axios from "axios";
 
 const SAMPLE = `# a few things you should NEVER paste into a chat window
@@ -50,6 +51,10 @@ export default function Playground() {
   const [copied, setCopied] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [serverVerified, setServerVerified] = useState(null); // null | boolean
+  const [receiptCopied, setReceiptCopied] = useState(false);
+  const [incomingReceipt, setIncomingReceipt] = useState(null); // { ... } | null
+  const [clipFromBookmarklet, setClipFromBookmarklet] = useState(false);
+  const sectionRef = useRef(null);
 
   const { cleaned, matches } = useMemo(
     () => (advanced ? redactAdvanced(input) : redact(input)),
@@ -96,13 +101,150 @@ export default function Playground() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---- bookmarklet / receipt ingress --------------------------------
+  // On first render, peek at window.location.hash for either
+  //   #playground&clip=<b64>     (bookmarklet handoff)
+  //   #playground&receipt=<b64>  (someone shared a redaction receipt)
+  // Populate the input and/or the "incoming receipt" banner, then scroll
+  // the Playground into view so the user lands exactly where the action
+  // is.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let cancelled = false;
+    let resolved = false;
+
+    const tryDecode = () => {
+      if (cancelled || resolved) return true;
+      const hash = window.location.hash || "";
+      if (!hash) return false;
+      const clip = decodeClipFromHash(hash);
+      const receipt = decodeReceiptFromHash(hash);
+      if (!clip && !receipt) return true; // hash present but nothing to decode
+      resolved = true;
+      if (clip) {
+        setInput(clip);
+        setClipFromBookmarklet(true);
+      }
+      if (receipt) {
+        setIncomingReceipt(receipt);
+      }
+      if (sectionRef.current) {
+        setTimeout(() => {
+          if (sectionRef.current) {
+            sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 50);
+      }
+      return true;
+    };
+
+    // Some preview/analytics wrappers clear the URL hash before React's
+    // first effect fires, then restore it a tick later. Poll briefly so
+    // we still pick up the bookmarklet payload when that happens.
+    if (!tryDecode()) {
+      let ticks = 0;
+      const id = setInterval(() => {
+        ticks += 1;
+        if (tryDecode() || ticks >= 20) clearInterval(id);
+      }, 100);
+      const onHashChange = () => tryDecode();
+      window.addEventListener("hashchange", onHashChange);
+      return () => {
+        cancelled = true;
+        clearInterval(id);
+        window.removeEventListener("hashchange", onHashChange);
+      };
+    }
+  }, []);
+
+  const copyReceiptUrl = async () => {
+    const url = buildReceiptUrl(
+      {
+        matches,
+        charsBefore: input.length,
+        charsAfter: cleaned.length,
+        advanced,
+      },
+      window.location.href
+    );
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setReceiptCopied(true);
+      setTimeout(() => setReceiptCopied(false), 1800);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <section
       id="playground"
+      ref={sectionRef}
       data-testid="live-playground-container"
       className="relative border-b border-white/10"
     >
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-16 md:py-24">
+        {clipFromBookmarklet && (
+          <div
+            data-testid="playground-bookmarklet-banner"
+            className="mb-6 border border-amber-400/40 bg-amber-400/10 text-amber-200 px-4 py-3 text-sm font-mono flex items-center gap-2"
+          >
+            <Zap size={14} className="text-amber-400" />
+            scanned your clipboard — {matches.length} secret(s) found.
+            <button
+              onClick={copyReceiptUrl}
+              data-testid="playground-bookmarklet-banner-copy"
+              className="ml-auto inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/50 px-2 py-1"
+            >
+              <LinkIcon size={12} />
+              {receiptCopied ? "copied!" : "copy receipt link"}
+            </button>
+          </div>
+        )}
+
+        {incomingReceipt && (
+          <div
+            data-testid="playground-incoming-receipt"
+            className="mb-6 border border-white/10 bg-[#0F0F0F] px-4 py-4 font-mono text-[12px] text-zinc-300"
+          >
+            <div className="flex items-center gap-2 text-amber-400">
+              <Receipt size={14} /> someone shared a receipt with you
+            </div>
+            <div className="mt-2 grid sm:grid-cols-3 gap-4">
+              <div>
+                <div className="text-[10px] text-zinc-500 tracking-widest">SECRETS CAUGHT</div>
+                <div className="text-2xl font-bold text-amber-400">
+                  {incomingReceipt.total_matches}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-zinc-500 tracking-widest">CHARS SCRUBBED</div>
+                <div className="text-2xl font-bold text-white">{incomingReceipt.chars_saved}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-zinc-500 tracking-widest">GENERATED</div>
+                <div className="text-xs text-zinc-400">
+                  {new Date(incomingReceipt.generated_at).toLocaleString()}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {Object.entries(incomingReceipt.per_pattern).map(([name, n]) => (
+                <span
+                  key={name}
+                  className="text-[10px] font-mono text-amber-400 border border-amber-400/40 px-1.5 py-0.5"
+                >
+                  {name} ×{n}
+                </span>
+              ))}
+            </div>
+            <div className="mt-3 text-[11px] text-zinc-500">
+              no plaintext in this link — only aggregate counts.
+            </div>
+          </div>
+        )}
         <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
           <div>
             <div className="text-[11px] font-mono text-amber-400 tracking-[0.2em] mb-2">// 01 PLAYGROUND</div>
@@ -152,6 +294,15 @@ export default function Playground() {
               className="inline-flex items-center gap-1.5 text-xs font-mono text-amber-400 hover:text-amber-300 border border-amber-400/40 hover:border-amber-400 px-3 py-2"
             >
               <Zap size={13} /> verify server-side
+            </button>
+            <button
+              onClick={copyReceiptUrl}
+              disabled={matches.length === 0}
+              data-testid="playground-copy-receipt-btn"
+              className="inline-flex items-center gap-1.5 text-xs font-mono text-black bg-amber-400 hover:bg-amber-300 border border-amber-400 px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {receiptCopied ? <Check size={13} /> : <LinkIcon size={13} />}
+              {receiptCopied ? "link copied" : "copy receipt link"}
             </button>
           </div>
         </div>

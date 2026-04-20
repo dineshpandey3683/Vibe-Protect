@@ -1,6 +1,7 @@
 import React from "react";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
+import Bookmarklet from "@/components/Bookmarklet";
 import Receipts from "@/components/Receipts";
 import Playground from "@/components/Playground";
 import PatternLibrary from "@/components/PatternLibrary";
@@ -30,6 +31,7 @@ function App() {
       <Nav />
       <main>
         <Hero />
+        <Bookmarklet />
         <Receipts />
         <Playground />
         <PatternLibrary />

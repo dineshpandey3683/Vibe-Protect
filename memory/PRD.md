@@ -377,10 +377,41 @@ full gate + launch runbook. Summary:
 
 **B — Launch prep:** wheel / sdist / extension zip all re-verified; release checklist generated at `/app/RELEASE_CHECKLIST.md`
 
+### Top-of-funnel: "Scan my clipboard" bookmarklet — 2026-04-20
+Zero-install entry point so prospects can feel the product in 3 seconds
+without downloading the CLI or installing the extension.
+
+**New frontend surfaces:**
+- `/app/frontend/src/components/Bookmarklet.jsx` — drag-to-bookmarks UI
+  with numbered how-it-works, copyable source, and privacy note
+- Added `#bookmarklet` nav link (Nav.jsx)
+- Playground now decodes `#playground&clip=<b64>` and auto-populates the
+  input + scrolls the user in, with an amber "scanned your clipboard"
+  banner and inline "copy receipt link" CTA
+- Playground also renders `#playground&receipt=<b64>` snapshots when a
+  user follows a shared receipt URL — aggregate counts only, zero plaintext
+
+**Codec additions in `shareLink.js`:**
+- `encodeClip` / `decodeClipFromHash` — Unicode-safe base64url, 20 KB cap
+- `encodeReceipt` / `decodeReceiptFromHash` / `buildReceiptUrl` — encodes
+  only pattern counts + chars-before/after, never plaintext
+
+**Quirk fixed:** the preview wrapper clears `window.location.hash` *after*
+React's first useEffect, then restores it. The hash reader now polls for
+~2 s and listens for `hashchange`, so the payload is caught whenever the
+wrapper restores it. Also: React 16.9+ refuses to render `javascript:`
+hrefs, so the bookmarklet `<a>` uses a ref + `setAttribute("href", …)`
+post-mount to bypass sanitization (safe here — URL is a vetted literal).
+
+**Tests:** `/app/frontend/src/lib/shareLink.test.js` — 12 Jest cases
+covering roundtrips, unicode, base64url compliance, size caps, and the
+receipt-never-leaks-plaintext invariant. All passing.
+
 ## Next task list
 
 After human completes PyPI + Chrome Web Store submission, pick any of:
 1. macOS `.dmg` / Linux `.AppImage` CI build matrix (P2)
 2. OS-level active-window enforcement for `blocked_applications` (P2)
 3. Bug-bounty integration via Huntr.dev (P2)
+4. Twitter/X share preview card for receipt URLs (OG-image-per-receipt)
 

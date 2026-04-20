@@ -70,6 +70,7 @@ export default function Nav() {
           )}
         </a>
         <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-400 font-mono">
+          <a href="#bookmarklet" className="hover:text-amber-400 transition-colors" data-testid="nav-bookmarklet">bookmarklet</a>
           <a href="#receipts" className="hover:text-white transition-colors" data-testid="nav-receipts">receipts</a>
           <a href="#playground" className="hover:text-white transition-colors">playground</a>
           <a href="#patterns" className="hover:text-white transition-colors">patterns</a>
