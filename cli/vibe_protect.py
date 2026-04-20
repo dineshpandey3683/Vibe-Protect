@@ -209,6 +209,128 @@ def _run_pre_commit_mode(*, advanced: bool) -> int:
     return exit_code
 
 
+# --- hook installer ----------------------------------------------------------
+_HOOK_MARKER = "# vibe-protect-managed-hook"
+
+_HOOK_TEMPLATE = """\
+#!/usr/bin/env sh
+{marker}
+#
+# Runs 'vibe-protect --pre-commit' over every staged file.
+# Exit 1 from the CLI blocks the commit.
+#
+# Remove with:   vibe-protect --uninstall-hook
+# Skip once:     git commit --no-verify
+exec vibe-protect --pre-commit
+"""
+
+
+def _git_hooks_dir() -> Path:
+    """Return the path to the current repo's hooks dir, or raise OSError.
+
+    Respects `core.hooksPath` (monorepos / dotfile repos). Raises OSError
+    with a human-readable message if we're not inside a git work tree.
+    """
+    import subprocess
+
+    try:
+        override = subprocess.check_output(
+            ["git", "config", "--get", "core.hooksPath"],
+            stderr=subprocess.DEVNULL, text=True,
+        ).strip()
+        if override:
+            return Path(override).expanduser()
+    except subprocess.CalledProcessError:
+        pass  # not configured — fine, fall through
+    except FileNotFoundError as e:
+        raise OSError(f"git is not installed or not on PATH: {e}") from e
+
+    try:
+        gitdir = subprocess.check_output(
+            ["git", "rev-parse", "--git-dir"],
+            stderr=subprocess.DEVNULL, text=True,
+        ).strip()
+    except subprocess.CalledProcessError as e:
+        raise OSError("not inside a git repository (git rev-parse failed)") from e
+
+    return Path(gitdir) / "hooks"
+
+
+def _install_pre_commit_hook(*, force: bool = False) -> int:
+    """Write ``.git/hooks/pre-commit`` that runs our --pre-commit scanner.
+
+    * If a hook already exists and it's ours (marker present), we rewrite
+      it silently — that's an idempotent upgrade.
+    * If a foreign hook exists, we refuse unless ``force=True`` and back
+      it up to ``pre-commit.vibe-protect.bak``.
+    """
+    try:
+        hooks_dir = _git_hooks_dir()
+    except OSError as e:
+        print(f"{RED}✖ {e}{RESET}", file=sys.stderr)
+        return 2
+
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    hook_path = hooks_dir / "pre-commit"
+
+    if hook_path.exists():
+        existing = hook_path.read_text(encoding="utf-8", errors="replace")
+        if _HOOK_MARKER in existing:
+            # Our own hook — always safe to rewrite (idempotent upgrade)
+            hook_path.write_text(_HOOK_TEMPLATE.format(marker=_HOOK_MARKER))
+            hook_path.chmod(0o755)
+            print(f"{GREEN}✓ vibe-protect pre-commit hook updated at {hook_path}{RESET}")
+            return 0
+
+        if not force:
+            print(
+                f"{AMBER}⚠ An existing pre-commit hook is already installed at "
+                f"{hook_path}.{RESET}\n"
+                f"  Re-run with {BOLD}--install-hook --force{RESET} to back it up and install ours.",
+                file=sys.stderr,
+            )
+            return 3
+
+        backup = hook_path.with_suffix(".vibe-protect.bak")
+        hook_path.rename(backup)
+        print(f"{DIM}  (existing hook backed up to {backup}){RESET}")
+
+    hook_path.write_text(_HOOK_TEMPLATE.format(marker=_HOOK_MARKER))
+    hook_path.chmod(0o755)
+    print(
+        f"{GREEN}✓ vibe-protect pre-commit hook installed at {hook_path}{RESET}\n"
+        f"{DIM}  every commit is now scanned — bypass with "
+        f"'git commit --no-verify'.{RESET}"
+    )
+    return 0
+
+
+def _uninstall_pre_commit_hook() -> int:
+    """Remove our hook. Leaves untouched anything that isn't ours."""
+    try:
+        hooks_dir = _git_hooks_dir()
+    except OSError as e:
+        print(f"{RED}✖ {e}{RESET}", file=sys.stderr)
+        return 2
+
+    hook_path = hooks_dir / "pre-commit"
+    if not hook_path.exists():
+        print(f"{DIM}no pre-commit hook to remove at {hook_path}{RESET}")
+        return 0
+
+    content = hook_path.read_text(encoding="utf-8", errors="replace")
+    if _HOOK_MARKER not in content:
+        print(
+            f"{AMBER}⚠ Refusing to remove a pre-commit hook we didn't install ({hook_path}).{RESET}",
+            file=sys.stderr,
+        )
+        return 3
+
+    hook_path.unlink()
+    print(f"{GREEN}✓ vibe-protect pre-commit hook removed.{RESET}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Vibe Protect — clipboard secret redactor")
     parser.add_argument("--log", help="Append each redaction event to a JSONL file")
@@ -293,6 +415,24 @@ def main() -> int:
         help="Run as a git pre-commit hook: scan every staged file, implies --json, "
              "exits 1 if any staged line contains a secret (blocks the commit).",
     )
+    parser.add_argument(
+        "--install-hook",
+        action="store_true",
+        help="Install a git pre-commit hook in the current repository so every "
+             "commit is automatically scanned. Idempotent.",
+    )
+    parser.add_argument(
+        "--uninstall-hook",
+        action="store_true",
+        help="Remove the vibe-protect pre-commit hook from the current repository. "
+             "Never touches a hook we didn't install.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="With --install-hook, back up any existing pre-commit hook and "
+             "install ours anyway.",
+    )
     args = parser.parse_args()
 
     # --pre-commit implies --json
@@ -359,6 +499,12 @@ def main() -> int:
             print(f"{AMBER}{name:<28}{RESET} {desc}")
             print(f"{DIM}    e.g. {ex}{RESET}")
         return 0
+
+    if args.install_hook:
+        return _install_pre_commit_hook(force=args.force)
+
+    if args.uninstall_hook:
+        return _uninstall_pre_commit_hook()
 
     # ------------------------------------------------------------------ #
     # --file / --pre-commit  —  file-scan modes (never enter the         #

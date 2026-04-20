@@ -1,0 +1,25 @@
+# Keep the docker build context tiny — everything below is irrelevant to
+# the CLI wheel we're packaging.
+node_modules/
+frontend/
+desktop/
+extension/
+vscode-extension/
+build/
+dist/
+docs/
+scripts/
+memory/
+test_reports/
+tests/
+.github/
+.git/
+.gitignore
+.env
+.env.*
+*.pyc
+__pycache__/
+.pytest_cache/
+.vscode/
+.idea/
+*.log
