@@ -25,6 +25,11 @@ from pathlib import Path
 
 import pytest
 
+# Desktop-app tests require Tkinter to import the module at all. In CI
+# images without ``libtk`` (or on the bare web-deploy container) the
+# test file must skip cleanly rather than hard-error.
+pytest.importorskip("tkinter", reason="Tkinter not available — desktop tests skipped")
+
 ROOT = Path(__file__).resolve().parents[2]
 DESKTOP_DIR = ROOT / "desktop"
 CLI_DIR = ROOT / "cli"
