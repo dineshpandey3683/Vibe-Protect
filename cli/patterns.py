@@ -148,6 +148,36 @@ def compile_union():
 UNION = compile_union()
 
 
+# ------------------------------------------------------------- dynamic merge
+def merged_patterns():
+    """Return the bundled 18 + any locally-cached dynamic patterns (additive only).
+
+    Dynamic patterns are loaded from ~/.vibeprotect/patterns.json, which is
+    only populated by PatternLibraryUpdater after a signed, validated fetch.
+    If the cache is missing/invalid, we return exactly the bundled list.
+    """
+    try:
+        from pattern_updater import PatternLibraryUpdater
+        dyn = PatternLibraryUpdater().load_dynamic_patterns()
+    except Exception:
+        dyn = []
+    # dedupe by name — bundled always wins
+    seen = {n for n, *_ in PATTERNS}
+    out = list(PATTERNS)
+    for entry in dyn:
+        if entry[0] in seen:
+            continue
+        seen.add(entry[0])
+        out.append(entry)
+    return out
+
+
+def compile_union_dynamic():
+    """Recompile the UNION including dynamic patterns (safe — additive only)."""
+    parts = [f"(?P<{n}>{_to_scoped(p)})" for n, p, _, _ in merged_patterns()]
+    return re.compile("|".join(parts))
+
+
 def redact(text: str, mask: str = "[REDACTED]"):
     """
     Redact all known secret patterns from `text`.

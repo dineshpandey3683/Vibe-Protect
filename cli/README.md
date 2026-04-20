@@ -81,8 +81,11 @@ See `python vibe_protect.py --list-patterns` for the full live list.
 
 | Variable                    | Meaning                                             |
 | --------------------------- | --------------------------------------------------- |
-| `VP_DISABLE_UPDATE_CHECK=1` | Fully disable the updater (no network calls at all) |
+| `VP_DISABLE_UPDATE_CHECK=1` | Fully disable the release updater (no network)     |
 | `VP_UPDATE_URL`             | Override the GitHub release API URL                 |
+| `VP_ENABLE_PATTERN_SYNC=1`  | Opt in to signed dynamic pattern bundles from CDN  |
+| `VP_PATTERN_URL`            | Override the pattern-bundle CDN origin              |
+| `VP_SIGNING_PUBKEY_PEM`     | Override the bundled Ed25519 public key             |
 | `VP_CACHE_DIR`              | Override the cache dir (default `~/.vibeprotect/`)  |
 
 The updater **never downloads or executes** a release asset automatically.

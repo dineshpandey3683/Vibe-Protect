@@ -32,6 +32,7 @@ except ImportError:
 
 from patterns import redact, PATTERNS
 from advanced_detector import AdvancedSecretDetector, CUSTOM_RULES_FILE, write_sample_custom_rules
+from pattern_updater import PatternLibraryUpdater
 from updater import check_for_update, print_update_banner, current_version
 
 
@@ -99,6 +100,16 @@ def main() -> int:
         action="store_true",
         help="Write a sample ~/.vibeprotect/custom_rules.json and exit",
     )
+    parser.add_argument(
+        "--sync-patterns",
+        action="store_true",
+        help="Fetch + verify the signed dynamic pattern bundle from the CDN and exit",
+    )
+    parser.add_argument(
+        "--no-pattern-sync",
+        action="store_true",
+        help="Skip the opportunistic pattern-library sync on startup",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -115,6 +126,12 @@ def main() -> int:
         print(f"✓ sample custom rules written to {path}")
         return 0
 
+    if args.sync_patterns:
+        result = PatternLibraryUpdater().update_patterns(force=True)
+        icon = "✓" if result.ok else "⚠"
+        print(f"{icon} pattern sync: {result}")
+        return 0 if result.ok else 1
+
     if args.list_patterns:
         for name, _, desc, ex in PATTERNS:
             print(f"{AMBER}{name:<28}{RESET} {desc}")
@@ -129,6 +146,12 @@ def main() -> int:
             print(f"{DIM}  custom rules loaded from {CUSTOM_RULES_FILE}{RESET}")
         if not args.no_update_check:
             print_update_banner(check_for_update(force=False))
+        if not args.no_pattern_sync:
+            result = PatternLibraryUpdater().update_patterns(force=False)
+            if result.ok:
+                print(f"{DIM}  ↻ pattern library: {result}{RESET}")
+            elif "disabled" not in result.reason and "throttled" not in result.reason:
+                print(f"{DIM}  ↻ pattern sync skipped: {result.reason}{RESET}")
         print()
 
     advanced_detector = AdvancedSecretDetector.load_default() if args.advanced else None
