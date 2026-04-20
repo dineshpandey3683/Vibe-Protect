@@ -103,6 +103,41 @@ See `screenshots/` in this directory for the capture scripts.
 Generated via `python scripts/generate_icons.py --force` (master icon
 up-scaled by the Nano Banana pipeline — ask for the marquee variant).
 
+## Promo tiles (required for Editor's Pick)
+
+Ready at `/app/docs/chrome-store/promo/`:
+
+- `small_440x280.png` — required for every non-basic listing
+- `marquee_1400x560.png` — required for Editor's Pick / featured placement
+
+These are "blank canvas" masters (shield on the left, negative space on
+the right) so a maintainer can drop localised marketing copy in Figma
+without re-running the image model. Regenerate via:
+
+```bash
+python scripts/generate_icons.py --promo-only          # reuse existing master
+python scripts/generate_icons.py --promo --force       # re-render from scratch
+```
+
+## Go-live: flip the "Add to Chrome" button on the website
+
+The web dashboard's hero has a conditional CTA: if the
+`REACT_APP_CWS_LISTING_ID` build-time env var is set, the secondary
+"Install on your machine" button is replaced with an amber
+"🌐 Add to Chrome" button that deep-links to
+`https://chromewebstore.google.com/detail/<LISTING_ID>`.
+
+Once CWS approves the listing and assigns you a 32-char listing ID
+(e.g. `abcdefghijklmnopqrstuvwxyz123456`):
+
+```bash
+# frontend/.env
+REACT_APP_CWS_LISTING_ID=abcdefghijklmnopqrstuvwxyz123456
+```
+
+Rebuild the frontend (`yarn build`) and the button flips automatically.
+No code change needed.
+
 ## Version-bump checklist
 
 Before every `vibe-protect-enterprise --build-chrome`:

@@ -219,22 +219,36 @@ that was NOT adopted verbatim):
   down-samples with Lanczos to `icon16.png` / `icon32.png` /
   `icon48.png` / `icon128.png` inside `/app/extension/icons/`.
   Atomic write via `.tmp` + rename.
+- Added `--promo` / `--promo-only` flags that generate the
+  **CWS promotional tiles** (`small_440x280.png` +
+  `marquee_1400x560.png`) from a separately-prompted wide master —
+  shield on the left, negative-space on the right for marketing copy
+  to be overlaid in Figma per locale. Unlocks Editor's Pick eligibility.
 - `vibe_protect_enterprise.py --build-chrome` now **fails fast** if any
   required icon is missing, isn't a PNG, or has the wrong dimensions
-  (reads PNG IHDR directly — no external deps). Master icon
-  `_master_1024.png` is explicitly excluded from the shipped zip.
+  (reads PNG IHDR directly — no external deps). Master icons
+  (`_master_1024.png`, `_marquee_master.png`) explicitly excluded
+  from the shipped zip.
 - `/app/docs/chrome-store/listing.md` — copy-paste-ready submission
   metadata: name ≤ 45 chars, 132-char short description, long
   description, category, keywords, permission justifications for every
   `activeTab` / `storage` / `scripting` / `clipboardRead` request, and
-  a screenshots-to-capture checklist (1280×800 each).
+  a screenshots-to-capture checklist (1280×800 each). Also documents
+  the post-approval go-live flip (`REACT_APP_CWS_LISTING_ID`).
 - `/app/docs/chrome-store/privacy-policy.md` — zero-telemetry privacy
   policy matching the extension's actual behaviour, with a
   ready-to-paste mapping for Google's "What data your extension handles"
   disclosure form.
+- `/app/frontend/src/components/Hero.jsx` — conditional secondary CTA.
+  Default: "Install on your machine". When `REACT_APP_CWS_LISTING_ID`
+  is set, the button flips to an amber "🌐 Add to Chrome" deep-link
+  to `https://chromewebstore.google.com/detail/<id>` — one env var
+  change on CWS approval day and the site becomes an install CTA.
 - End-to-end verified: icons render cleanly (Gemini-analysed 8/10
-  readability at 16×16), `--build-chrome` produces a 26.7 KB zip
-  containing only the real PNGs + MV3 assets, submission docs in place.
+  readability at 16×16, marquee 7/10 professional polish with correct
+  layout), `--build-chrome` produces a 26.7 KB zip containing only the
+  real PNGs + MV3 assets, submission docs in place, hero renders the
+  correct default CTA variant.
 
 ### `pip install vibe-protect` — PyPI packaging (2026-02)
 - `/app/pyproject.toml` — PEP 621 metadata, 3 extras (`desktop` /

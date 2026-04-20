@@ -120,13 +120,26 @@ export default function Hero() {
             >
               Try the playground <ArrowRight size={16} />
             </a>
-            <a
-              href="#downloads"
-              data-testid="hero-cta-install"
-              className="inline-flex items-center gap-2 border border-white/20 hover:border-white/50 hover:bg-white/5 text-zinc-100 px-5 py-3 font-mono text-sm transition-colors"
-            >
-              Install on your machine
-            </a>
+            {process.env.REACT_APP_CWS_LISTING_ID ? (
+              <a
+                href={`https://chromewebstore.google.com/detail/${process.env.REACT_APP_CWS_LISTING_ID}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="hero-cta-install-chrome"
+                className="inline-flex items-center gap-2 border border-amber-400/50 bg-amber-400/10 hover:bg-amber-400/20 hover:border-amber-400 text-amber-100 px-5 py-3 font-mono text-sm transition-colors"
+              >
+                <Chrome size={16} className="text-amber-400" />
+                Add to Chrome
+              </a>
+            ) : (
+              <a
+                href="#downloads"
+                data-testid="hero-cta-install"
+                className="inline-flex items-center gap-2 border border-white/20 hover:border-white/50 hover:bg-white/5 text-zinc-100 px-5 py-3 font-mono text-sm transition-colors"
+              >
+                Install on your machine
+              </a>
+            )}
             <VerifiedBadge />
           </div>
           <div className="mt-10 flex items-center gap-6 text-[11px] font-mono text-zinc-500">
