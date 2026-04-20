@@ -186,7 +186,7 @@ def build_binaries() -> int:
 # =========================================================================
 # --test-bug "<text>"  →  LOCAL self-test, no disk writes of input
 # =========================================================================
-def test_bug(sample: str, confidence_threshold: float) -> int:
+def _test_bug(sample: str, confidence_threshold: float) -> int:
     """Run the detector against ``sample`` and print whether it was caught.
 
     This function is intentionally air-gapped: the user-supplied text is
@@ -309,7 +309,7 @@ def main(argv=None) -> int:
     if args.build_binaries:
         return build_binaries()
     if args.test_bug is not None:
-        return test_bug(args.test_bug, args.confidence)
+        return _test_bug(args.test_bug, args.confidence)
 
     # default path — clipboard monitor with enterprise flags applied
     return run_monitor(args.backend, args.confidence)
