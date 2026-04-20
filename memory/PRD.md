@@ -98,6 +98,32 @@ base64 blobs.
 
 ## What's been implemented (2026-02)
 
+### Live "Receipts" panel on the web dashboard
+- `/app/scripts/generate_stats.py` — re-computes detection-rate / FP-rate
+  from the same fixtures the pytest corpus asserts on, writes
+  `/app/frontend/public/stats.json` (stable schema; version + ISO
+  timestamp + per-pattern breakdown included).
+- `/app/frontend/src/components/Receipts.jsx` — fetches stats.json at
+  runtime and renders three metric tiles (detection rate %, FP rate %,
+  patterns + ML entropy count) plus a generated-at stamp. Wired into
+  `App.js` between Hero and Playground, plus a `#receipts` nav link.
+- `/app/.github/workflows/ci.yml` — runs the full pytest corpus on every
+  push + PR, regenerates stats.json, and uploads it as a 30-day build
+  artifact. Numbers on the landing page are now tied to a green build.
+
+### Pattern-corpus regression suite
+- 540 synthetic positives (30 per pattern, seeded, distribution-faithful;
+  zero real leaked secrets — RFC-5737 TEST-NET IPs + public Stripe test
+  PANs)
+- 158 curated false positives (UUIDs, git SHAs, version strings,
+  placeholders, docker digests, code comments)
+- Tightened `long_base64_blob` regex to exclude pure-hex digests — real
+  product win surfaced by the FP corpus (git SHAs / docker digests no
+  longer get redacted). Detection rate for true base64 blobs stays 100%.
+- Pinned known-limitation cases for 2-series Mastercard, 14-digit Diners,
+  and JCB — tests will *fail loudly* when the CC regex expansion lands,
+  inviting a clean corpus migration.
+
 ### Unified enterprise CLI dispatcher (`/app/cli/vibe_protect_enterprise.py`)
 Thin (~225-line) dispatcher that routes every flag to existing hardened
 modules — no inlined crypto, no duplicated logic:

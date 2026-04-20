@@ -70,6 +70,7 @@ export default function Nav() {
           )}
         </a>
         <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-400 font-mono">
+          <a href="#receipts" className="hover:text-white transition-colors" data-testid="nav-receipts">receipts</a>
           <a href="#playground" className="hover:text-white transition-colors">playground</a>
           <a href="#patterns" className="hover:text-white transition-colors">patterns</a>
           <a href="#downloads" className="hover:text-white transition-colors">downloads</a>

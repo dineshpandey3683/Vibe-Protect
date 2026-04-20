@@ -1,6 +1,7 @@
 import React from "react";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
+import Receipts from "@/components/Receipts";
 import Playground from "@/components/Playground";
 import PatternLibrary from "@/components/PatternLibrary";
 import StatsPanel from "@/components/StatsPanel";
@@ -29,6 +30,7 @@ function App() {
       <Nav />
       <main>
         <Hero />
+        <Receipts />
         <Playground />
         <PatternLibrary />
         <StatsPanel />

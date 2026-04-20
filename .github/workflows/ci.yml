@@ -1,0 +1,53 @@
+name: ci
+
+# Runs the full pytest corpus on every push/PR and regenerates
+# frontend/public/stats.json from the same fixtures. The stats file
+# becomes a build artifact so the web dashboard's "Receipts" panel can
+# be populated from the latest green run.
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+jobs:
+  test-and-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install -r cli/requirements.txt
+          pip install pytest requests
+
+      - name: Run pattern-corpus test suite
+        run: |
+          pytest backend/tests/test_corpus.py \
+                 backend/tests/test_ml_scorer.py \
+                 backend/tests/test_audit_sqlite.py \
+                 backend/tests/test_enterprise_dispatcher.py -v
+
+      - name: Regenerate stats.json
+        run: python scripts/generate_stats.py
+
+      - name: Show stats.json
+        run: cat frontend/public/stats.json
+
+      - name: Upload stats.json as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stats-json
+          path: frontend/public/stats.json
+          retention-days: 30
