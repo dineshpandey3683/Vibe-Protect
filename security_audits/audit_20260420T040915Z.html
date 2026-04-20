@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Vibe Protect — Security Audit 2026-04-20T04:09:15.447461+00:00</title>
+<style>
+  body { font-family: ui-monospace, Menlo, Consolas, monospace; background:#0a0a0a; color:#fafafa; padding:40px; max-width:960px; margin:auto; }
+  h1 { color:#facc15; margin-bottom:4px; }
+  .meta { color:#a1a1aa; font-size:13px; }
+  .score-card { margin:24px 0; padding:28px; background:#121212; border:1px solid rgba(255,255,255,0.08); }
+  .score { font-size:56px; font-weight:900; color:#facc15; line-height:1; }
+  .grade { font-size:20px; color:#fafafa; margin-left:16px; }
+  table { width:100%; border-collapse: collapse; margin-top:16px; }
+  th, td { border-bottom:1px solid rgba(255,255,255,0.08); padding:10px; text-align:left; vertical-align:top; }
+  th { color:#71717a; font-size:11px; letter-spacing:.12em; font-weight:600; }
+  details { margin:12px 0; padding:10px 14px; background:#121212; border:1px solid rgba(255,255,255,0.08); }
+  details pre { background:#050505; padding:12px; overflow:auto; font-size:11px; }
+  code { color:#facc15; }
+  footer { color:#71717a; font-size:11px; margin-top:32px; }
+</style></head>
+<body>
+  <h1>▍ Vibe Protect — security audit</h1>
+  <div class="meta">
+    2026-04-20T04:09:15.447461+00:00 · Linux 6.12.55+ · Python 3.11.15
+  </div>
+  <div class="score-card">
+    <span class="score">86.5</span>
+    <span class="grade">/ 100 &nbsp; grade A-</span>
+  </div>
+  <table>
+    <thead><tr><th>Check</th><th>Status</th><th style='text-align:right'>Wt</th><th>Note</th></tr></thead>
+    <tbody><tr><td><code>static_analysis</code></td><td style='color:#facc15;font-weight:700'>WARN</td><td style='text-align:right'>12</td><td>4 MEDIUM-severity issue(s) from bandit</td></tr><tr><td><code>dependency_scan</code></td><td style='color:#facc15;font-weight:700'>WARN</td><td style='text-align:right'>15</td><td>7 lower-severity CVE(s) in dependencies</td></tr><tr><td><code>crypto_validation</code></td><td style='color:#22c55e;font-weight:700'>PASS</td><td style='text-align:right'>20</td><td>crypto primitives verified end-to-end</td></tr><tr><td><code>memory_safety</code></td><td style='color:#22c55e;font-weight:700'>PASS</td><td style='text-align:right'>10</td><td>0.008 MB peak over 1k iterations</td></tr><tr><td><code>network_isolation</code></td><td style='color:#22c55e;font-weight:700'>PASS</td><td style='text-align:right'>18</td><td>zero external connections during offline code paths</td></tr><tr><td><code>pattern_integrity</code></td><td style='color:#22c55e;font-weight:700'>PASS</td><td style='text-align:right'>10</td><td>patterns.py + installer bundle hashed; count ≥ 18</td></tr><tr><td><code>permission_model</code></td><td style='color:#22c55e;font-weight:700'>PASS</td><td style='text-align:right'>10</td><td>least-privilege permissions across all components</td></tr><tr><td><code>supply_chain</code></td><td style='color:#22c55e;font-weight:700'>PASS</td><td style='text-align:right'>5</td><td>all deps have version constraints</td></tr></tbody>
+  </table>
+  <h2 style="color:#facc15;margin-top:32px">Detailed findings</h2>
+  <details><summary><code>static_analysis</code> · <span style='color:#facc15'>WARN</span></summary><pre>{
+  &quot;high&quot;: 0,
+  &quot;medium&quot;: 4,
+  &quot;low&quot;: 15,
+  &quot;files_scanned&quot;: 2666
+}</pre></details><details><summary><code>dependency_scan</code> · <span style='color:#facc15'>WARN</span></summary><pre>{
+  &quot;packages_with_vulns&quot;: 4,
+  &quot;total_vulns&quot;: 7,
+  &quot;high_or_critical&quot;: 0
+}</pre></details><details><summary><code>crypto_validation</code> · <span style='color:#22c55e'>PASS</span></summary><pre>{
+  &quot;aes256_gcm_roundtrip&quot;: true,
+  &quot;aes_gcm_rejects_tampered_ct&quot;: true,
+  &quot;hmac_catches_rewrapped_entry&quot;: true,
+  &quot;algorithms&quot;: [
+    &quot;AES-256-GCM&quot;,
+    &quot;HMAC-SHA256&quot;,
+    &quot;HKDF-SHA256&quot;,
+    &quot;PBKDF2-HMAC-SHA256 (200k iters)&quot;
+  ],
+  &quot;compliance_claim&quot;: &quot;uses FIPS-approved algorithms (NOT the same as FIPS 140-2 certified \u2014 requires a validated crypto module)&quot;,
+  &quot;randomness_source&quot;: &quot;os.urandom (CSPRNG)&quot;
+}</pre></details><details><summary><code>memory_safety</code> · <span style='color:#22c55e'>PASS</span></summary><pre>{
+  &quot;iterations&quot;: 1000,
+  &quot;peak_mb&quot;: 0.008,
+  &quot;current_mb&quot;: 0.006
+}</pre></details><details><summary><code>network_isolation</code> · <span style='color:#22c55e'>PASS</span></summary><pre>{
+  &quot;probe_calls&quot;: 0,
+  &quot;external_connections&quot;: [],
+  &quot;total_external&quot;: 0,
+  &quot;local_only_allowed&quot;: [
+    &quot;127.0.0.0/8&quot;,
+    &quot;::1&quot;,
+    &quot;localhost&quot;
+  ]
+}</pre></details><details><summary><code>pattern_integrity</code> · <span style='color:#22c55e'>PASS</span></summary><pre>{
+  &quot;hashes&quot;: {
+    &quot;cli/patterns.py&quot;: &quot;7370c79cc0bd445feeb1857f9f413455b66ec9437ae2129e9fc2163da55a0298&quot;,
+    &quot;installer/patterns.json&quot;: &quot;7c1b28ba27d3fe4c777e1f34d18580ae29fd663598328a617b55868fdb17d567&quot;
+  },
+  &quot;bundled_pattern_count&quot;: 18
+}</pre></details><details><summary><code>permission_model</code> · <span style='color:#22c55e'>PASS</span></summary><pre>{
+  &quot;extension&quot;: {
+    &quot;permissions&quot;: [
+      &quot;activeTab&quot;,
+      &quot;storage&quot;,
+      &quot;scripting&quot;
+    ],
+    &quot;optional_permissions&quot;: [
+      &quot;clipboardRead&quot;
+    ],
+    &quot;host_permissions&quot;: [
+      &quot;https://chat.openai.com/*&quot;,
+      &quot;https://chatgpt.com/*&quot;,
+      &quot;https://claude.ai/*&quot;,
+      &quot;https://github.com/*&quot;
+    ],
+    &quot;content_script_matches&quot;: [
+      [
+        &quot;https://chat.openai.com/*&quot;,
+        &quot;https://chatgpt.com/*&quot;,
+        &quot;https://claude.ai/*&quot;
+      ]
+    ]
+  },
+  &quot;cli_filesystem_footprint&quot;: [
+    &quot;~/.vibeprotect/   (owner-only)&quot;,
+    &quot;~/.vibeprotect/audit/   (AES-256-GCM + HMAC)&quot;
+  ],
+  &quot;cli_network&quot;: &quot;outbound disabled by default; opt-in via VP_ENABLE_*&quot;,
+  &quot;camera_microphone_location&quot;: &quot;never requested&quot;
+}</pre></details><details><summary><code>supply_chain</code> · <span style='color:#22c55e'>PASS</span></summary><pre>{
+  &quot;pins&quot;: {
+    &quot;cli/requirements.txt&quot;: &quot;80d44183c30a6258e7f792ac5aca4f6c7eab483728650bc7a15476dc823b9576&quot;,
+    &quot;backend/requirements.txt&quot;: &quot;42e597a301f83fb73fd6b622d38a6bd8f916379054cc1e4a56305b2b3ff24ba8&quot;,
+    &quot;desktop/requirements.txt&quot;: &quot;e249e7a8de2ae61b89af412a814381646f3ec47a19c57b8b63627d1bc006b820&quot;
+  },
+  &quot;unpinned&quot;: []
+}</pre></details>
+  <footer>
+    Vibe Protect automated auditor · rubric published in <code>cli/security_audit.py</code>.
+    skip == neutral (optional tool missing, not penalised); warn == half credit; fail == zero.
+  </footer>
+</body></html>

@@ -138,6 +138,11 @@ def main() -> int:
         action="store_true",
         help="Print the currently-effective enterprise policy and exit",
     )
+    parser.add_argument(
+        "--security-audit",
+        choices=["json", "md", "html"],
+        help="Run the automated security audit suite and write a report",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -179,6 +184,15 @@ def main() -> int:
 
     if args.show_policy:
         print(EnterpriseConfigManager().describe())
+        return 0
+
+    if args.security_audit:
+        from security_audit import SecurityAuditor
+        auditor = SecurityAuditor()
+        snap = auditor.run_full_audit()
+        path = auditor.generate_report(args.security_audit)
+        print(f"✓ security audit: {snap['score']}/{snap['score_out_of']} · grade {snap['grade']}")
+        print(f"  report: {path}")
         return 0
 
     if args.list_patterns:
