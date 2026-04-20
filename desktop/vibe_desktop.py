@@ -27,7 +27,8 @@ from tkinter import ttk
 
 import pyperclip  # noqa: E402
 from patterns import redact, PATTERNS  # noqa: E402
-from updater import check_for_update, current_version  # noqa: E402
+from updater import current_version  # noqa: E402
+from production_updater import ProductionUpdater  # noqa: E402
 
 
 BG = "#0A0A0A"
@@ -162,8 +163,8 @@ class VibeApp:
         )
         self.update_lbl.pack(side="right")
         self.update_lbl.bind("<Button-1>", lambda _e: self._check_update(force=True))
-        # silent startup check
-        threading.Thread(target=lambda: self._check_update(force=False, silent=True), daemon=True).start()
+        # silent startup check — uses the canonical ProductionUpdater API
+        threading.Thread(target=self._startup_update_check, daemon=True).start()
 
     def _stat_card(self, parent, label, value):
         card = tk.Frame(parent, bg=SURFACE, highlightbackground=BORDER, highlightthickness=1)
@@ -268,7 +269,8 @@ class VibeApp:
         self.root.destroy()
 
     def _check_update(self, force: bool = False, silent: bool = False):
-        info = check_for_update(force=force)
+        updater = ProductionUpdater(on_update=lambda _info: None, force=force)
+        info = updater.check_for_update()
         def _apply():
             if info.error and not silent:
                 self.update_lbl.configure(text="update check failed", fg=MUTED)
@@ -286,6 +288,34 @@ class VibeApp:
                 self.update_lbl.configure(text=f"✓ v{info.current} · up to date", fg=MUTED)
         try:
             self.root.after(0, _apply)
+        except Exception:
+            pass
+
+    def _startup_update_check(self):
+        """Mirrors the canonical snippet:
+            updater = ProductionUpdater()
+            updater.check_for_update()
+        but runs off the Tk main thread so the window pops instantly.
+        """
+        updater = ProductionUpdater(on_update=self._on_update_available)
+        updater.check_for_update()
+
+    def _on_update_available(self, info):
+        if not info or not info.is_update_available:
+            return
+        try:
+            self.root.after(
+                0,
+                lambda: self.update_lbl.configure(
+                    text=f"▲ update available → v{info.latest}", fg=AMBER
+                ),
+            )
+            self.root.after(
+                0,
+                lambda: self.update_lbl.bind(
+                    "<Button-1>", lambda _e, url=info.release_url: self._open_url(url)
+                ),
+            )
         except Exception:
             pass
 
