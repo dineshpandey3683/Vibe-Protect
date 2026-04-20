@@ -211,6 +211,25 @@ that was NOT adopted verbatim):
   unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
   fixtures live under `/app/backend/tests/corpus/`.
 
+### Open Graph social-preview card (2026-02)
+- `scripts/generate_icons.py --og` / `--og-only` renders a 1200×630
+  Open Graph card to `/app/frontend/public/og-image.png`. Two-pass
+  composition: Gemini Nano Banana produces a wide shield-left /
+  negative-space-right master; Pillow then bakes razor-sharp
+  typography on top (kicker `VIBE·PROTECT`, 72-px white headline
+  "Stop pasting secrets into AI chats.", `100% detection · 0% false
+  positives · open source` subtitle, amber accent bar, micro-line
+  "vibeprotect.dev · MIT · no telemetry"). Model-generated text is
+  unreliable — Pillow post-pass guarantees pixel-perfect copy.
+- Gemini-analysed **9/10** professional polish.
+- `/app/frontend/public/index.html` now ships full OG + Twitter-card
+  meta tags: `og:title`, `og:description`, `og:image`, `og:image:width`,
+  `og:image:height`, `og:image:alt`, `twitter:card` set to
+  `summary_large_image`, updated `<title>` + `<meta name="description">`.
+- Fetch-verified live: `HTTP 200 · image/png · 514 KB` at
+  `https://<preview>/og-image.png`; curl of the page returns all ten
+  og:/twitter: meta tags.
+
 ### Chrome Web Store submission bundle (2026-02)
 - `/app/scripts/generate_icons.py` — one-shot pipeline that asks
   Gemini Nano Banana (`gemini-3.1-flash-image-preview` via

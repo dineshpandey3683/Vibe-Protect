@@ -40,8 +40,11 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 APP_ROOT = Path(__file__).resolve().parent.parent
 ICONS_DIR = APP_ROOT / "extension" / "icons"
 PROMO_DIR = APP_ROOT / "docs" / "chrome-store" / "promo"
+OG_DIR = APP_ROOT / "frontend" / "public"
 MASTER_PATH = ICONS_DIR / "_master_1024.png"
 PROMO_MASTER_PATH = PROMO_DIR / "_marquee_master.png"
+OG_MASTER_PATH = OG_DIR / "_og_master.png"
+OG_OUT_PATH = OG_DIR / "og-image.png"
 SIZES = (16, 32, 48, 128)
 
 # Chrome Web Store promotional asset specs. Small tile is required for
@@ -50,6 +53,12 @@ PROMO_SIZES = {
     "small":    (440, 280),   # small tile — shown on CWS category pages
     "marquee":  (1400, 560),  # marquee — required for Editor's Pick
 }
+
+# Open Graph social-preview spec (used by Twitter/X, LinkedIn, Slack,
+# Discord, Reddit). Facebook recommends 1200×630 at a 1.91:1 ratio — our
+# target. Renders at 600×315 on mobile, so the master must still be
+# legible at that size.
+OG_SIZE = (1200, 630)
 
 PROMPT = (
     "A clean, minimalist app-icon illustration. Square canvas with a "
@@ -75,6 +84,19 @@ PROMO_PROMPT = (
     "marketing copy to be added later in a separate step). Style: "
     "modern, minimal, cinematic, professional developer-tool aesthetic. "
     "High contrast, crisp edges, zero noise."
+)
+
+OG_PROMPT = (
+    "A 1200×630 Open Graph social-media preview card for a developer "
+    "security tool called Vibe Protect. Wide cinematic 1.91:1 aspect "
+    "ratio. Near-black background (#0A0A0A) with an extremely subtle "
+    "vignette toward the corners. Left third: a single large amber-gold "
+    "shield glyph (#FACC15), flat design, no gradients, no bevels, "
+    "containing a thin black horizontal redaction bar at its midpoint. "
+    "Right two-thirds: completely empty negative space — no text, no "
+    "letters, no numbers, no code snippets, no UI. Style: premium, "
+    "minimal, security-serious, developer-tool aesthetic. Crisp edges. "
+    "Will be overlaid with type in a subsequent Pillow pass."
 )
 
 
@@ -148,12 +170,10 @@ def make_promo_tiles(master: Path) -> None:
         target_ratio = tw / th
         src_ratio = mw / mh
         if src_ratio > target_ratio:
-            # master is wider than target — crop left/right
             new_w = int(mh * target_ratio)
             left = (mw - new_w) // 2
             cropped = img.crop((left, 0, left + new_w, mh))
         else:
-            # master is taller — crop top/bottom
             new_h = int(mw / target_ratio)
             top = (mh - new_h) // 2
             cropped = img.crop((0, top, mw, top + new_h))
@@ -164,6 +184,90 @@ def make_promo_tiles(master: Path) -> None:
         resized.save(tmp, format="PNG", optimize=True)
         tmp.replace(out)
         print(f"✅ {out.relative_to(APP_ROOT)}  ({tw}×{th}, {out.stat().st_size // 1024} KB)")
+
+
+def make_og_image(master: Path) -> None:
+    """Compose the 1200×630 Open Graph card.
+
+    Two passes: (1) Lanczos-resize the Gemini-generated master into the
+    1200×630 canvas (center-crop to aspect); (2) Pillow-overlay razor-sharp
+    typography on top. Text rendered by the model is unreliable — we always
+    bake it in a deterministic post-processing step so the copy stays
+    pixel-perfect and easy to iterate on without re-hitting the model.
+    """
+    from PIL import ImageDraw, ImageFont
+
+    tw, th = OG_SIZE
+    base = Image.open(master).convert("RGB")
+    mw, mh = base.size
+    target_ratio = tw / th
+    src_ratio = mw / mh
+    if src_ratio > target_ratio:
+        new_w = int(mh * target_ratio)
+        left = (mw - new_w) // 2
+        cropped = base.crop((left, 0, left + new_w, mh))
+    else:
+        new_h = int(mw / target_ratio)
+        top = (mh - new_h) // 2
+        cropped = base.crop((0, top, mw, top + new_h))
+    canvas = cropped.resize((tw, th), Image.Resampling.LANCZOS).convert("RGBA")
+
+    # Text overlay. Try to find a decent system font; fall back to the
+    # default bitmap font (ugly but never fails — we'd rather ship a
+    # slightly uglier OG than crash the build pipeline).
+    def _load_font(size: int) -> "ImageFont.FreeTypeFont":
+        for path in [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "C:\\Windows\\Fonts\\arialbd.ttf",
+        ]:
+            if os.path.exists(path):
+                return ImageFont.truetype(path, size)
+        return ImageFont.load_default()
+
+    draw = ImageDraw.Draw(canvas, "RGBA")
+
+    # Ink a soft right-side gradient vignette so copy has better contrast
+    # no matter what the model put in the background.
+    veil = Image.new("RGBA", (tw, th), (10, 10, 10, 0))
+    vdraw = ImageDraw.Draw(veil)
+    for i in range(tw):
+        alpha = int(190 * (i / tw) ** 1.6)
+        vdraw.line([(i, 0), (i, th)], fill=(10, 10, 10, alpha))
+    canvas = Image.alpha_composite(canvas, veil)
+    draw = ImageDraw.Draw(canvas, "RGBA")
+
+    # Typography: bold headline + mono subtitle. 1200×630 on mobile renders
+    # at ~600×315 so we bias the headline big (72 px).
+    title_font    = _load_font(72)
+    subtitle_font = _load_font(28)
+    mono_font     = _load_font(22)
+
+    title = "Stop pasting secrets\ninto AI chats."
+    subtitle = "100% detection  ·  0% false positives  ·  open source"
+    kicker = "VIBE·PROTECT"
+
+    # Kicker (amber, uppercase, wide-tracked) — top-right
+    draw.text((tw - 510, 60), kicker, font=mono_font, fill="#FACC15", spacing=6)
+
+    # Title — right half, generously spaced
+    draw.multiline_text((540, 200), title, font=title_font, fill="#FFFFFF", spacing=12)
+
+    # Subtitle — right half, below title
+    draw.text((540, 420), subtitle, font=subtitle_font, fill="#A1A1AA")
+
+    # A thin amber accent rule under the subtitle
+    draw.rectangle([(540, 480), (540 + 96, 484)], fill="#FACC15")
+
+    # Tiny tagline under the accent rule
+    draw.text((540, 500), "vibeprotect.dev  ·  MIT  ·  no telemetry", font=mono_font, fill="#71717A")
+
+    out = OG_OUT_PATH
+    tmp = out.with_suffix(".png.tmp")
+    canvas.convert("RGB").save(tmp, format="PNG", optimize=True)
+    tmp.replace(out)
+    print(f"✅ {out.relative_to(APP_ROOT)}  ({tw}×{th}, {out.stat().st_size // 1024} KB)")
 
 
 def main() -> int:
@@ -177,11 +281,17 @@ def main() -> int:
                          "(440×280 small + 1400×560 marquee)")
     ap.add_argument("--promo-only", action="store_true",
                     help="skip icon generation; only (re)generate promo tiles")
+    ap.add_argument("--og", action="store_true",
+                    help="also generate the 1200×630 Open Graph social card "
+                         "at frontend/public/og-image.png")
+    ap.add_argument("--og-only", action="store_true",
+                    help="skip everything else; only (re)generate the OG card")
     args = ap.parse_args()
 
     ICONS_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not args.promo_only:
+    do_icons = not (args.promo_only or args.og_only)
+    if do_icons:
         if args.force or not MASTER_PATH.exists():
             asyncio.run(generate_master(MASTER_PATH))
         else:
@@ -189,7 +299,8 @@ def main() -> int:
         if not args.master_only:
             downsample_master(MASTER_PATH, SIZES)
 
-    if args.promo or args.promo_only:
+    do_promo = (args.promo or args.promo_only) and not args.og_only
+    if do_promo:
         print()
         if args.force or not PROMO_MASTER_PATH.exists():
             asyncio.run(generate_master(
@@ -201,12 +312,27 @@ def main() -> int:
             print(f"• reusing existing promo master: {PROMO_MASTER_PATH.relative_to(APP_ROOT)}  (use --force to regenerate)")
         make_promo_tiles(PROMO_MASTER_PATH)
 
+    do_og = args.og or args.og_only
+    if do_og:
+        print()
+        if args.force or not OG_MASTER_PATH.exists():
+            asyncio.run(generate_master(
+                OG_MASTER_PATH,
+                prompt=OG_PROMPT,
+                session="vibe-protect-og-master",
+            ))
+        else:
+            print(f"• reusing existing OG master: {OG_MASTER_PATH.relative_to(APP_ROOT)}  (use --force to regenerate)")
+        make_og_image(OG_MASTER_PATH)
+
     print()
-    if not args.promo_only:
+    if do_icons:
         print(f"✅ {len(SIZES)} icon(s) written to {ICONS_DIR.relative_to(APP_ROOT)}")
-    if args.promo or args.promo_only:
+    if do_promo:
         print(f"✅ {len(PROMO_SIZES)} promo tile(s) written to {PROMO_DIR.relative_to(APP_ROOT)}")
-    if not args.promo_only:
+    if do_og:
+        print(f"✅ OG card written to {OG_OUT_PATH.relative_to(APP_ROOT)}")
+    if do_icons:
         print("   Next step: python /app/cli/vibe_protect_enterprise.py --build-chrome")
     return 0
 
