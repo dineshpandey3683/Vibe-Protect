@@ -10,16 +10,16 @@ import re
 
 PATTERNS = [
     (
-        "openai_api_key",
-        r"sk-(?:proj-)?[A-Za-z0-9_\-]{20,}",
-        "OpenAI API keys (sk-... and sk-proj-...)",
-        "sk-proj-abcd1234efgh5678ijkl9012mnop3456",
-    ),
-    (
         "anthropic_api_key",
         r"sk-ant-[A-Za-z0-9_\-]{20,}",
         "Anthropic Claude API keys",
         "sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxx",
+    ),
+    (
+        "openai_api_key",
+        r"sk-(?:proj-)?[A-Za-z0-9_\-]{20,}",
+        "OpenAI API keys (sk-... and sk-proj-...)",
+        "sk-proj-abcd1234efgh5678ijkl9012mnop3456",
     ),
     (
         "aws_access_key",

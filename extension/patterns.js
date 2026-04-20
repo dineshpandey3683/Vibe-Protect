@@ -2,8 +2,8 @@
 // Shared pattern library (non-module version for extension contexts).
 /* eslint-disable no-useless-escape */
 const VP_PATTERNS = [
-  { name: "openai_api_key",        label: "OpenAI API Key",   regex: /sk-(?:proj-)?[A-Za-z0-9_\-]{20,}/g },
   { name: "anthropic_api_key",     label: "Anthropic Key",    regex: /sk-ant-[A-Za-z0-9_\-]{20,}/g },
+  { name: "openai_api_key",        label: "OpenAI API Key",   regex: /sk-(?:proj-)?[A-Za-z0-9_\-]{20,}/g },
   { name: "aws_access_key",        label: "AWS Access Key",   regex: /\bAKIA[0-9A-Z]{16}\b/g },
   { name: "aws_secret_key",        label: "AWS Secret Key",   regex: /aws(?:.{0,20})?(?:secret|private)?(?:.{0,20})?['"][0-9a-zA-Z/+]{40}['"]/gi },
   { name: "github_token",          label: "GitHub Token",     regex: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },

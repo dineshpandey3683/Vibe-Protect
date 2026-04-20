@@ -7,18 +7,18 @@
 /* eslint-disable no-useless-escape */
 export const PATTERNS = [
   {
-    name: "openai_api_key",
-    label: "OpenAI API Key",
-    regex: /sk-(?:proj-)?[A-Za-z0-9_\-]{20,}/g,
-    description: "OpenAI API keys (sk-... and sk-proj-...)",
-    example: "sk-proj-abcd1234efgh5678ijkl9012mnop3456",
-  },
-  {
     name: "anthropic_api_key",
     label: "Anthropic Key",
     regex: /sk-ant-[A-Za-z0-9_\-]{20,}/g,
     description: "Anthropic Claude API keys",
     example: "sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxx",
+  },
+  {
+    name: "openai_api_key",
+    label: "OpenAI API Key",
+    regex: /sk-(?:proj-)?[A-Za-z0-9_\-]{20,}/g,
+    description: "OpenAI API keys (sk-... and sk-proj-...)",
+    example: "sk-proj-abcd1234efgh5678ijkl9012mnop3456",
   },
   {
     name: "aws_access_key",
