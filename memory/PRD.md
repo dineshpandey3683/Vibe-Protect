@@ -211,7 +211,7 @@ that was NOT adopted verbatim):
   unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
   fixtures live under `/app/backend/tests/corpus/`.
 
-### Credit-card regex expansion + Luhn validation (2026-02)
+### Credit-card regex expansion + Luhn validation + brand masks (2026-02)
 - Expanded `credit_card` regex in `/app/cli/patterns.py` to cover
   **7 brands**: Visa, Mastercard 5-series, **Mastercard 2-series
   (2221-2720)**, Amex, Discover, **14-digit Diners (300-305 / 36 /
@@ -220,6 +220,13 @@ that was NOT adopted verbatim):
   post-filter for `credit_card` matches — catches the vast majority
   of random-numeric false positives that the regex alone would
   accept.
+- **Brand-specific redaction masks**: `classify_card_brand()` in
+  `advanced_detector.py` maps every Luhn-valid PAN to one of
+  `[VISA]`, `[MC]`, `[AMEX]`, `[DISCOVER]`, `[DINERS]`, `[JCB]`,
+  `[UNIONPAY]`. Compliance auditors can now answer "which brands
+  are we scrubbing most?" from log aggregation alone, without
+  exposing a single PAN. `test_card_brands.py` pins the classifier
+  + end-to-end mask mapping for all 16 corpus PANs.
 - **Deliberately NOT added**: Maestro and RuPay. Their published
   prefixes (5xx / 6xx / 60 / 65 / 81 / 82) overlap every other brand
   and would cause catastrophic false-positive rates on order IDs,

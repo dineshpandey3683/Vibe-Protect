@@ -38,6 +38,38 @@ from patterns import PATTERNS as _BASE_PATTERNS, _to_scoped
 CONFIG_DIR = Path(os.environ.get("VP_CACHE_DIR") or Path.home() / ".vibeprotect")
 CUSTOM_RULES_FILE = CONFIG_DIR / "custom_rules.json"
 
+# Brand classifier applied to every Luhn-verified credit_card match so the
+# redaction mask surfaces brand-level telemetry (`[VISA]`, `[AMEX]`, …)
+# without exposing the underlying PAN. Compliance auditors can now answer
+# "which card brands are most often scrubbed?" from log aggregation alone.
+#
+# Ordering matters: the first prefix regex to match wins. We list brands
+# from most-specific prefix to least so e.g. Diners `36`/`38`/`39` resolve
+# before Amex's `3[47]`, and JCB `352-358` resolves before Diners' `3...`.
+# Every PAN reaching this classifier has already passed the main
+# credit_card regex + the Luhn check, so loose disjunctions are safe.
+_CARD_BRAND_PATTERNS = [
+    ("VISA",     re.compile(r"^4")),
+    ("AMEX",     re.compile(r"^3[47]")),
+    ("JCB",      re.compile(r"^35[2-8][0-9]")),
+    ("DINERS",   re.compile(r"^3(?:0[0-5]|[68][0-9])")),
+    ("MC",       re.compile(r"^(?:5[1-5]|2[2-7])")),
+    ("UNIONPAY", re.compile(r"^62")),
+    ("DISCOVER", re.compile(r"^(?:6011|65|64[4-9]|622)")),
+]
+
+
+def classify_card_brand(pan: str) -> str:
+    """Return a stable brand tag for a Luhn-valid credit-card PAN.
+
+    Falls back to ``CREDIT_CARD`` if no classifier matches (shouldn't
+    happen given the main regex + Luhn gate, but defensive anyway).
+    """
+    for brand, rx in _CARD_BRAND_PATTERNS:
+        if rx.match(pan):
+            return brand
+    return "CREDIT_CARD"
+
 # Entropy filter is only meaningful for random/key-like patterns. Low-entropy
 # patterns (emails, IPs, credit cards, shell prompts, DB URLs) must always
 # match regardless of entropy — otherwise we'd silently miss real secrets.
@@ -243,6 +275,13 @@ class AdvancedSecretDetector:
                 # valid BIN prefix, which is a huge false-positive surface.
                 if name == "credit_card" and not self._luhn_valid(original):
                     continue
+                # Brand-specific mask for credit cards — `[VISA]`, `[AMEX]`,
+                # etc. — so audit logs record brand telemetry without
+                # exposing the underlying PAN.
+                if name == "credit_card":
+                    mask = f"[{classify_card_brand(original)}]"
+                else:
+                    mask = f"[{name.upper()}]"
                 # Only score "key-like" patterns via the ML heuristic — low-
                 # entropy structural patterns (emails, IPs, credit cards,
                 # shell prompts, DB URLs) are always full-confidence.
@@ -256,7 +295,7 @@ class AdvancedSecretDetector:
                         start=m.start(),
                         end=m.end(),
                         original=original,
-                        mask=f"[{name.upper()}]",
+                        mask=mask,
                         entropy=ent,
                         reason="user_custom" if name in self.user_patterns else "pattern",
                         confidence=confidence,
