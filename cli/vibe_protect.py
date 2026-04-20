@@ -34,6 +34,7 @@ from patterns import redact, PATTERNS
 from advanced_detector import AdvancedSecretDetector, CUSTOM_RULES_FILE, write_sample_custom_rules
 from pattern_updater import PatternLibraryUpdater
 from community_rules import CommunityRulesFetcher
+from audit_logger import AuditLogger, EventType, Action
 from updater import check_for_update, print_update_banner, current_version
 
 
@@ -116,6 +117,21 @@ def main() -> int:
         action="store_true",
         help="Skip opportunistic pattern-library + community-rules sync on startup",
     )
+    parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="Write an encrypted, HMAC-authenticated audit log to ~/.vibeprotect/audit/",
+    )
+    parser.add_argument(
+        "--audit-report",
+        choices=["json", "csv"],
+        help="Print a compliance report over the existing audit log and exit",
+    )
+    parser.add_argument(
+        "--audit-verify",
+        action="store_true",
+        help="Verify integrity of every audit entry on disk and exit",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -144,6 +160,17 @@ def main() -> int:
         print(f"{icon} {result}")
         return 0 if result.ok else 1
 
+    if args.audit_report:
+        print(AuditLogger().generate_compliance_report(args.audit_report))
+        return 0
+
+    if args.audit_verify:
+        rep = AuditLogger().verify_integrity()
+        print(f"total={rep.total} good={rep.good} tampered={len(rep.tampered)}")
+        for t in rep.tampered:
+            print(f"  ✖ {t}")
+        return 0 if not rep.tampered else 2
+
     if args.list_patterns:
         for name, _, desc, ex in PATTERNS:
             print(f"{AMBER}{name:<28}{RESET} {desc}")
@@ -170,6 +197,10 @@ def main() -> int:
         print()
 
     advanced_detector = AdvancedSecretDetector.load_default() if args.advanced else None
+    auditor = AuditLogger() if args.audit else None
+    if auditor:
+        auditor.log(EventType.STARTUP, action=Action.INFO, metadata={"mode": "advanced" if args.advanced else "standard"})
+
     def _do_redact(text: str):
         if advanced_detector is not None:
             return advanced_detector.redact(text)
@@ -210,6 +241,19 @@ def main() -> int:
                 total_redactions += 1
                 chars_saved = len(current) - len(cleaned)
                 total_chars += max(0, chars_saved)
+
+                if auditor:
+                    # one audit entry per detected pattern for fine-grained reporting
+                    kinds_for_audit = {}
+                    for m in matches:
+                        kinds_for_audit[m["pattern"]] = kinds_for_audit.get(m["pattern"], 0) + 1
+                    for k, v in kinds_for_audit.items():
+                        auditor.log(
+                            EventType.REDACTION,
+                            secret_type=k,
+                            action=Action.SCRUBBED,
+                            metadata={"count": v, "chars_before": len(current), "chars_after": len(cleaned)},
+                        )
 
                 ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
                 summary = summarise(matches)
