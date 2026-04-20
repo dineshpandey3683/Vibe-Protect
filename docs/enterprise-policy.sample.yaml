@@ -1,0 +1,84 @@
+# =============================================================================
+# Vibe Protect — sample enterprise policy (YAML)
+# =============================================================================
+# Copy this file to one of the platform-specific machine-policy paths:
+#
+#   Windows   C:\ProgramData\VibeProtect\policy.yaml
+#   macOS     /Library/Application Support/VibeProtect/policy.yaml
+#   Linux     /etc/vibeprotect/policy.yaml
+#
+# Fields you do NOT list stay at their secure defaults — you only need to
+# override what matters for your org. Run `python vibe_protect.py --show-policy`
+# on any endpoint to verify the rolled-out policy is what you expect.
+#
+# Any field listed under `enforced_fields` becomes immutable by the local
+# user — ~/.vibeprotect/config.yaml edits for those keys are ignored.
+# =============================================================================
+
+policy_version: "1.0.0"
+
+# ── protection behaviour ─────────────────────────────────────────────────────
+enforce_redaction: true
+pause_allowed: false            # users cannot pause the clipboard guardian
+
+# If set, ONLY these patterns are active. Comment out to keep all 18 built-ins.
+# allowed_secret_types:
+#   - openai_api_key
+#   - anthropic_api_key
+#   - aws_access_key
+#   - github_token
+#   - stripe_key
+#   - jwt_token
+#   - private_key_block
+
+# Patterns to suppress (e.g. because internal repos are littered with 10.x IPs
+# that you don't consider secrets).
+disabled_secret_types:
+  - ipv4
+
+# Desktop-only: process or window-title substrings where copy is blocked
+# entirely (not just redacted). The CLI ignores this list.
+blocked_applications:
+  - Slack
+  - Discord
+  - Telegram
+
+# ── audit & compliance ───────────────────────────────────────────────────────
+audit_level: "verbose"          # minimal | standard | verbose
+compliance_mode: "SOC2"         # NONE | SOC2 | HIPAA | GDPR | PCI
+log_retention_days: 365
+
+# ── updates ──────────────────────────────────────────────────────────────────
+auto_update: true
+update_channel: "stable"        # stable | beta | enterprise
+pattern_update_frequency_hours: 12
+
+# ── SSO / identity ───────────────────────────────────────────────────────────
+sso_enabled: false              # flip to true after filling in the fields below
+sso_provider: "azure"           # azure | okta | google
+sso_tenant_id: "00000000-0000-0000-0000-000000000000"   # Azure: tenant UUID · Okta: acme.okta.com
+sso_client_id: "11111111-1111-1111-1111-111111111111"   # app registration (used as JWT audience)
+# sso_jwks_url: "https://login.microsoftonline.com/.../discovery/v2.0/keys"  # optional override
+
+required_groups:
+  - "SecurityEngineering"
+  - "AllEmployees"
+
+# ── enforcement ──────────────────────────────────────────────────────────────
+# Fields in this list CANNOT be overridden by user config.
+# Everything else is a hint — user config can still flip it.
+enforced_fields:
+  - enforce_redaction
+  - pause_allowed
+  - audit_level
+  - compliance_mode
+  - log_retention_days
+  - auto_update
+  - update_channel
+  - sso_enabled
+  - sso_provider
+  - sso_tenant_id
+  - sso_client_id
+  - required_groups
+  - disabled_secret_types
+  - blocked_applications

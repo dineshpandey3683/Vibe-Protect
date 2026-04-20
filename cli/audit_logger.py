@@ -82,6 +82,9 @@ class EventType(str, Enum):
     STARTUP = "STARTUP"
     SHUTDOWN = "SHUTDOWN"
     TAMPER_DETECTED = "TAMPER_DETECTED"
+    POLICY_VIOLATION = "POLICY_VIOLATION"
+    POLICY_LOADED = "POLICY_LOADED"
+    SSO_AUTH = "SSO_AUTH"
 
 
 class Action(str, Enum):

@@ -35,6 +35,7 @@ from advanced_detector import AdvancedSecretDetector, CUSTOM_RULES_FILE, write_s
 from pattern_updater import PatternLibraryUpdater
 from community_rules import CommunityRulesFetcher
 from audit_logger import AuditLogger, EventType, Action
+from enterprise_config import EnterpriseConfigManager
 from updater import check_for_update, print_update_banner, current_version
 
 
@@ -132,6 +133,11 @@ def main() -> int:
         action="store_true",
         help="Verify integrity of every audit entry on disk and exit",
     )
+    parser.add_argument(
+        "--show-policy",
+        action="store_true",
+        help="Print the currently-effective enterprise policy and exit",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -170,6 +176,10 @@ def main() -> int:
         for t in rep.tampered:
             print(f"  ✖ {t}")
         return 0 if not rep.tampered else 2
+
+    if args.show_policy:
+        print(EnterpriseConfigManager().describe())
+        return 0
 
     if args.list_patterns:
         for name, _, desc, ex in PATTERNS:
