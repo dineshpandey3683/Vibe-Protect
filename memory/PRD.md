@@ -98,6 +98,31 @@ base64 blobs.
 
 ## What's been implemented (2026-02)
 
+### Unified enterprise CLI dispatcher (`/app/cli/vibe_protect_enterprise.py`)
+Thin (~225-line) dispatcher that routes every flag to existing hardened
+modules — no inlined crypto, no duplicated logic:
+
+| Flag | Delegates to |
+|---|---|
+| *(none)* | `vibe_protect.main()` clipboard monitor (monkey-patched to apply `--backend` + `--confidence`) |
+| `--build-chrome` | zips real `/app/extension/` → `dist/vibe_protect_extension_v<ver>.zip` |
+| `--audit` (+ `--audit-format html|json|md`) | `SecurityAuditor.generate_report()` |
+| `--build-binaries` | delegates to `installer/build_windows.py` on Windows; prints precise PyInstaller recipe for macOS/Linux (tracked P2) |
+| `--test-bug "<text>"` | **LOCAL-ONLY** detector self-test — input is never persisted, hashed, or transmitted; on miss, points user to `SECURITY.md` |
+| `--backend sqlite\|flatfile` | `AuditLogger(backend=…)` |
+| `--confidence 0.0..1.0` | `AdvancedSecretDetector(ml_confidence_threshold=…)` |
+
+**Security boundaries preserved** (vs. the user's monolithic v3.0 script
+that was NOT adopted verbatim):
+- Master-key salt stays persisted across runs (monolith would regenerate
+  it, breaking decryption of all prior logs).
+- SQLite audit rows store the AES-GCM + HMAC-signed entry as an encrypted
+  blob; metadata is never persisted in cleartext.
+- `--test-bug` never writes the user's input to disk — covered by
+  `test_input_never_written_to_disk` regression test.
+- `--build-chrome` zips the real working Manifest V3 extension, not a
+  placeholder that returns text unchanged.
+
 ### ML-style heuristic secret scoring
 - `AdvancedSecretDetector.calculate_ml_score(text, pattern_matched)` —
   bounded [0, 1] weighted sum of:
@@ -116,6 +141,16 @@ base64 blobs.
 - Flat-file (`BACKEND_FLATFILE`) remains the default; both backends share
   identical crypto + tamper detection.
 - `audit_logger.py --backend sqlite {verify|list|report}` CLI support.
+
+## Testing (39/39 pytest green)
+- `/app/backend/tests/test_vibe_protect.py` — 8 FastAPI endpoint tests
+- `/app/backend/tests/test_ml_scorer.py` — 16 tests for heuristic scorer
+  (entropy, variety, length, pattern-boost, threshold filter)
+- `/app/backend/tests/test_audit_sqlite.py` — 8 tests for SQLite backend
+  (schema, encryption-at-rest, round-trip, tamper, isolation)
+- `/app/backend/tests/test_enterprise_dispatcher.py` — 7 tests for the
+  unified CLI (help surface, arg validation, `--test-bug` secret-never-
+  persisted regression, `--build-chrome` real-extension check)
 
 ## Prioritised backlog / future
 

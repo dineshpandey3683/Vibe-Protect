@@ -1,0 +1,146 @@
+{
+  "audit_started_utc": "2026-04-20T05:02:47.455569+00:00",
+  "audit_finished_utc": "2026-04-20T05:02:51.659282+00:00",
+  "app_root": "/app",
+  "platform": "Linux 6.12.55+ \u00b7 Python 3.11.15",
+  "results": {
+    "static_analysis": {
+      "status": "warn",
+      "weight": 12,
+      "note": "4 MEDIUM-severity issue(s) from bandit",
+      "details": {
+        "high": 0,
+        "medium": 4,
+        "low": 17,
+        "files_scanned": 3125
+      }
+    },
+    "dependency_scan": {
+      "status": "warn",
+      "weight": 15,
+      "note": "7 lower-severity CVE(s) in dependencies",
+      "details": {
+        "packages_with_vulns": 4,
+        "total_vulns": 7,
+        "high_or_critical": 0
+      }
+    },
+    "crypto_validation": {
+      "status": "pass",
+      "weight": 20,
+      "note": "crypto primitives verified end-to-end",
+      "details": {
+        "aes256_gcm_roundtrip": true,
+        "aes_gcm_rejects_tampered_ct": true,
+        "hmac_catches_rewrapped_entry": true,
+        "algorithms": [
+          "AES-256-GCM",
+          "HMAC-SHA256",
+          "HKDF-SHA256",
+          "PBKDF2-HMAC-SHA256 (200k iters)"
+        ],
+        "compliance_claim": "uses FIPS-approved algorithms (NOT the same as FIPS 140-2 certified \u2014 requires a validated crypto module)",
+        "randomness_source": "os.urandom (CSPRNG)"
+      }
+    },
+    "memory_safety": {
+      "status": "pass",
+      "weight": 10,
+      "note": "0.007 MB peak over 1k iterations",
+      "details": {
+        "iterations": 1000,
+        "peak_mb": 0.007,
+        "current_mb": 0.004
+      }
+    },
+    "network_isolation": {
+      "status": "pass",
+      "weight": 18,
+      "note": "zero external connections during offline code paths",
+      "details": {
+        "probe_calls": 0,
+        "external_connections": [],
+        "total_external": 0,
+        "local_only_allowed": [
+          "127.0.0.0/8",
+          "::1",
+          "localhost"
+        ]
+      }
+    },
+    "pattern_integrity": {
+      "status": "pass",
+      "weight": 10,
+      "note": "patterns.py + installer bundle hashed; count \u2265 18",
+      "details": {
+        "hashes": {
+          "cli/patterns.py": "7370c79cc0bd445feeb1857f9f413455b66ec9437ae2129e9fc2163da55a0298",
+          "installer/patterns.json": "7c1b28ba27d3fe4c777e1f34d18580ae29fd663598328a617b55868fdb17d567"
+        },
+        "bundled_pattern_count": 18
+      }
+    },
+    "permission_model": {
+      "status": "pass",
+      "weight": 10,
+      "note": "least-privilege permissions across all components",
+      "details": {
+        "extension": {
+          "permissions": [
+            "activeTab",
+            "storage",
+            "scripting"
+          ],
+          "optional_permissions": [
+            "clipboardRead"
+          ],
+          "host_permissions": [
+            "https://chat.openai.com/*",
+            "https://chatgpt.com/*",
+            "https://claude.ai/*",
+            "https://github.com/*"
+          ],
+          "content_script_matches": [
+            [
+              "https://chat.openai.com/*",
+              "https://chatgpt.com/*",
+              "https://claude.ai/*"
+            ]
+          ]
+        },
+        "cli_filesystem_footprint": [
+          "~/.vibeprotect/   (owner-only)",
+          "~/.vibeprotect/audit/   (AES-256-GCM + HMAC)"
+        ],
+        "cli_network": "outbound disabled by default; opt-in via VP_ENABLE_*",
+        "camera_microphone_location": "never requested"
+      }
+    },
+    "supply_chain": {
+      "status": "pass",
+      "weight": 5,
+      "note": "all deps have version constraints",
+      "details": {
+        "pins": {
+          "cli/requirements.txt": "80d44183c30a6258e7f792ac5aca4f6c7eab483728650bc7a15476dc823b9576",
+          "backend/requirements.txt": "42e597a301f83fb73fd6b622d38a6bd8f916379054cc1e4a56305b2b3ff24ba8",
+          "desktop/requirements.txt": "e249e7a8de2ae61b89af412a814381646f3ec47a19c57b8b63627d1bc006b820"
+        },
+        "unpinned": []
+      }
+    }
+  },
+  "rubric": {
+    "static_analysis": 12,
+    "dependency_scan": 15,
+    "crypto_validation": 20,
+    "memory_safety": 10,
+    "network_isolation": 18,
+    "pattern_integrity": 10,
+    "permission_model": 10,
+    "supply_chain": 5
+  },
+  "score": 86.5,
+  "score_out_of": 100,
+  "grade": "A-"
+}
