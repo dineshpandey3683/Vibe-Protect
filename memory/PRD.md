@@ -142,7 +142,7 @@ that was NOT adopted verbatim):
   identical crypto + tamper detection.
 - `audit_logger.py --backend sqlite {verify|list|report}` CLI support.
 
-## Testing (39/39 pytest green)
+## Testing (66/66 pytest green)
 - `/app/backend/tests/test_vibe_protect.py` — 8 FastAPI endpoint tests
 - `/app/backend/tests/test_ml_scorer.py` — 16 tests for heuristic scorer
   (entropy, variety, length, pattern-boost, threshold filter)
@@ -151,10 +151,26 @@ that was NOT adopted verbatim):
 - `/app/backend/tests/test_enterprise_dispatcher.py` — 7 tests for the
   unified CLI (help surface, arg validation, `--test-bug` secret-never-
   persisted regression, `--build-chrome` real-extension check)
+- `/app/backend/tests/test_corpus.py` — **27 tests** over a 540-case
+  synthetic positive corpus + 158-case FP corpus. Current scores:
+  per-pattern detection ≥ 90%, overall **100%**, FP rate **0%**,
+  confidence–entropy monotonicity across quartiles, real-vs-placeholder
+  confidence gap ≥ 0.10, + 4 pinned known-limitation assertions for
+  unsupported CC brands (2-series MC, 14-digit Diners, JCB). Corpus
+  fixtures live under `/app/backend/tests/corpus/`.
+
+### Regex improvement (2026-02)
+- `long_base64_blob` tightened to exclude pure-hex 60+ char strings
+  (git SHAs, docker `@sha256:…` digests, hash output). Surfaced by the
+  new FP corpus; detection rate for true base64 blobs stays 100%.
 
 ## Prioritised backlog / future
 
 **P1**
+- Expand `credit_card` regex to cover 2-series Mastercard (2221-2720),
+  14-digit Diners, and JCB (16-digit). Pinned by
+  `test_corpus::TestKnownLimitations` — those tests will flip to failing
+  when the regex lands, at which point move the PANs into the main corpus.
 - Package CLI as a `pip install vibe-protect` with console script
 - Publish the extension to Chrome Web Store + Firefox Add-ons
 - Real PNG icons for the extension (currently placeholder-only)

@@ -113,7 +113,10 @@ PATTERNS = [
     ),
     (
         "long_base64_blob",
-        r"(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{60,}={0,2}(?![A-Za-z0-9+/])",
+        # Require at least one non-hex-digit char ([G-Z]|[g-z]|'+'|'/') to
+        # exclude 60+ char hex digests (git SHAs, docker `@sha256:…`, hash
+        # output) which are almost never secrets.
+        r"(?<![A-Za-z0-9+/])(?=[A-Za-z0-9+/]*[G-Zg-z+/])[A-Za-z0-9+/]{60,}={0,2}(?![A-Za-z0-9+/])",
         "Long base64 blobs (likely encoded secrets/certs)",
         "VGhpc0lzQVZlcnlMb25nQmFzZTY0U3RyaW5nVGhhdE1pZ2h0QmVBU2VjcmV0UGF5bG9hZA==",
     ),
