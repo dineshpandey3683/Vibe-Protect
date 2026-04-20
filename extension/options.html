@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vibe Protect — Patterns</title>
+    <link rel="stylesheet" href="popup.css" />
+    <style>
+      body { width: 520px; padding: 20px; }
+      h1 { font-size: 14px; letter-spacing: 0.08em; margin: 0 0 12px; }
+      p.help { color:#a1a1aa; margin: 0 0 16px; line-height: 1.6; }
+      ul.patterns { list-style: none; padding: 0; margin: 0; }
+      ul.patterns li {
+        display:flex; justify-content:space-between; align-items:center;
+        padding: 10px 0; border-bottom: 1px dashed rgba(255,255,255,0.08);
+      }
+      .pname { color:#fafafa; }
+      .pdesc { color:#71717a; font-size: 10px; margin-top: 2px; }
+      .right { display:flex; align-items:center; gap:10px; }
+    </style>
+  </head>
+  <body>
+    <h1>▍ PATTERNS</h1>
+    <p class="help">
+      Toggle off any pattern that produces false positives for your workflow.
+      Everything runs locally in your browser — nothing is sent to a server.
+    </p>
+    <ul class="patterns" id="list"></ul>
+
+    <script src="patterns.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

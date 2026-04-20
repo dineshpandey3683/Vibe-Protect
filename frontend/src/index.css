@@ -1,58 +1,200 @@
+@import url("https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800,900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --vp-bg: #0a0a0a;
+    --vp-surface: #121212;
+    --vp-surface-elev: #1a1a1a;
+    --vp-border: rgba(255, 255, 255, 0.08);
+    --vp-border-strong: rgba(255, 255, 255, 0.16);
+    --vp-text: #fafafa;
+    --vp-muted: #a1a1aa;
+    --vp-muted-2: #71717a;
+    --vp-amber: #facc15;
+    --vp-amber-soft: #422006;
+    --vp-amber-hover: #fde047;
+
+    --font-display: "Cabinet Grotesk", "IBM Plex Sans", ui-sans-serif, system-ui;
+    --font-body: "IBM Plex Sans", ui-sans-serif, system-ui;
+    --font-mono:
+        "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* we stay dark by default regardless of shadcn vars */
+html,
 body {
     margin: 0;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-        sans-serif;
+    background: var(--vp-bg);
+    color: var(--vp-text);
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+body {
+    background:
+        radial-gradient(
+            900px 500px at 15% -20%,
+            rgba(250, 204, 21, 0.08),
+            transparent 60%
+        ),
+        radial-gradient(
+            700px 400px at 90% 10%,
+            rgba(250, 204, 21, 0.04),
+            transparent 55%
+        ),
+        #0a0a0a;
 }
 
+/* faint grid background for hero and key sections */
+.vp-grid {
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+}
+
+.vp-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.25 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.vp-redact {
+    background: var(--vp-amber);
+    color: #0a0a0a;
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+    animation: vp-pop 180ms ease-out;
+}
+
+@keyframes vp-pop {
+    from {
+        transform: scaleX(0.2);
+        opacity: 0;
+    }
+    to {
+        transform: scaleX(1);
+        opacity: 1;
+    }
+}
+
+.vp-blink {
+    animation: vp-blink 1s steps(2, start) infinite;
+}
+@keyframes vp-blink {
+    to {
+        visibility: hidden;
+    }
+}
+
+/* marquee */
+.vp-marquee {
+    display: flex;
+    overflow: hidden;
+    gap: 2rem;
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 8%,
+        black 92%,
+        transparent
+    );
+}
+.vp-marquee-track {
+    display: flex;
+    gap: 2rem;
+    animation: vp-scroll 40s linear infinite;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+@keyframes vp-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.vp-scan::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(250, 204, 21, 0.4),
+        transparent
+    );
+    animation: vp-scanline 3.5s linear infinite;
+    pointer-events: none;
+}
+@keyframes vp-scanline {
+    0% {
+        top: 0%;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
+}
+
+/* links & focus */
+a {
+    color: inherit;
+}
+:focus-visible {
+    outline: 2px solid var(--vp-amber);
+    outline-offset: 2px;
+}
+
+/* simple scrollbar in dark */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+}
+
+/* shadcn-compat vars (kept dark) */
 @layer base {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
-        --ring: 0 0% 3.9%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-        --radius: 0.5rem;
-    }
-    .dark {
         --background: 0 0% 3.9%;
         --foreground: 0 0% 98%;
-        --card: 0 0% 3.9%;
+        --card: 0 0% 7%;
         --card-foreground: 0 0% 98%;
         --popover: 0 0% 3.9%;
         --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
+        --primary: 48 96% 53%;
         --primary-foreground: 0 0% 9%;
         --secondary: 0 0% 14.9%;
         --secondary-foreground: 0 0% 98%;
@@ -60,56 +202,17 @@ code {
         --muted-foreground: 0 0% 63.9%;
         --accent: 0 0% 14.9%;
         --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
+        --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 14.9%;
+        --border: 0 0% 100% / 0.08;
         --input: 0 0% 14.9%;
-        --ring: 0 0% 83.1%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
+        --ring: 48 96% 53%;
+        --radius: 0.125rem;
     }
-}
-
-@layer base {
     * {
         @apply border-border;
     }
     body {
         @apply bg-background text-foreground;
-    }
-}
-
-@layer base {
-    [data-debug-wrapper="true"] {
-        display: contents !important;
-    }
-
-    [data-debug-wrapper="true"] > * {
-        margin-left: inherit;
-        margin-right: inherit;
-        margin-top: inherit;
-        margin-bottom: inherit;
-        padding-left: inherit;
-        padding-right: inherit;
-        padding-top: inherit;
-        padding-bottom: inherit;
-        column-gap: inherit;
-        row-gap: inherit;
-        gap: inherit;
-        border-left-width: inherit;
-        border-right-width: inherit;
-        border-top-width: inherit;
-        border-bottom-width: inherit;
-        border-left-style: inherit;
-        border-right-style: inherit;
-        border-top-style: inherit;
-        border-bottom-style: inherit;
-        border-left-color: inherit;
-        border-right-color: inherit;
-        border-top-color: inherit;
-        border-bottom-color: inherit;
     }
 }

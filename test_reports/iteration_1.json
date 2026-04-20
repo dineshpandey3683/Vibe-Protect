@@ -1,0 +1,44 @@
+{
+  "summary": "First iteration e2e testing of Vibe Protect. Backend 7/8 pytest passed (only failing assertion is a pattern-classification nuance, not a security leak). Frontend: all sections render, all data-testids present, live typing redaction, stats polling, feed, downloads copy, pattern library all working. Fixed two trivial bugs (duplicate React keys in Feed, unhandled clipboard rejection in Downloads).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/redact",
+        "issue": "Anthropic Claude keys (sk-ant-...) are mis-classified as openai_api_key because the openai regex 'sk-(?:proj-)?[A-Za-z0-9_\\-]{20,}' is listed BEFORE the anthropic regex in /app/cli/patterns.py UNION alternation. Python regex alternation picks the first match, so sk-ant-XXX matches openai_api_key first. The secret IS still redacted (no plaintext leak), but the emitted mask tag is [OPENAI_API_KEY] instead of [ANTHROPIC_API_KEY], and the event source tracks the wrong pattern name. Fix: reorder PATTERNS so anthropic comes before openai, OR tighten the openai regex to exclude 'sk-ant-' (e.g. 'sk-(?!ant-)(?:proj-)?[A-Za-z0-9_\\-]{20,}')."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_vibe_protect.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Reorder PATTERNS in /app/cli/patterns.py so anthropic_api_key is listed before openai_api_key (or tighten openai regex with a negative lookahead for 'ant-') so Anthropic keys are labeled correctly. Security is not affected — keys are still redacted — but the UI/feed/telemetry will show the right pattern name."
+  ],
+  "critical_code_review_comments": [
+    "cli/patterns.py: UNION ordering matters — the openai_api_key regex swallows anthropic, slack-like, and potentially stripe patterns starting with 'sk-'. Ordering should be most-specific first.",
+    "backend/server.py /api/stats: uses string comparison on ISO timestamps (ts: {$gte: since_iso_string}). Works because isoformat is lexicographically sortable for UTC timestamps, but storing ts as a BSON Date would be more idiomatic and allow proper indexing.",
+    "Playground.jsx doCopy has 'catch {}' that silently swallows clipboard failures with no user feedback — consider surfacing a toast like Downloads.jsx now does.",
+    "Feed.jsx originally used key={p} inside a pattern list where the same pattern name could appear multiple times in one event — fixed by this iteration.",
+    "Downloads.jsx originally had no try/catch around navigator.clipboard.writeText which triggered the react-scripts 'Uncaught runtime errors' overlay in any context (iframes, non-https, denied permission) — fixed by this iteration."
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/Feed.jsx",
+    "/app/frontend/src/components/Downloads.jsx",
+    "/app/backend/tests/__init__.py",
+    "/app/backend/tests/test_vibe_protect.py"
+  ],
+  "success_rate": {"backend": "87.5% (7/8)", "frontend": "100% of flows validated"},
+  "test_credentials": "n/a — no auth required",
+  "seed_data_creation": "Several TEST_* events were created in vp_events during pytest runs (via /api/track and /api/redact). They are anonymized counters only and do not contain PII. No explicit cleanup needed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend tests live at /app/backend/tests/test_vibe_protect.py (8 tests, pytest). The single failing test is 'test_redact_env_blob' and is a classification assertion, not a security assertion — the underlying plaintext IS fully redacted. After the main agent tweaks pattern order, this test should pass unchanged. All 18 patterns are listed in /app/cli/patterns.py and mirrored in /app/frontend/src/lib/patterns.js. The backend imports the Python pattern module by prepending /app/cli to sys.path — works fine under supervisor.",
+  "rca_of_the_issue": "Duplicate-key React warning (67 occurrences per interaction) RCA: Feed.jsx mapped it.patterns.slice(0,3) using the pattern name as the React key; a single redaction event with multiple matches of the same pattern (e.g. two openai_api_keys) produced duplicate siblings with identical keys. Fixed by using composite key `${it.id}-${idx}-${p}-${i}`. Clipboard Uncaught runtime error RCA: Downloads.jsx Card.doCopy awaited navigator.clipboard.writeText without a try/catch; in any context where the Permissions API denies write (iframe preview, insecure context, user not gesture-originated), the promise rejects and react-scripts DevServer surfaces it as a fullscreen 'Uncaught runtime errors' overlay. Fixed by wrapping in try/catch and falling back to a sonner error toast."
+}

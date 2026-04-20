@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vibe Protect</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="dot"></span>
+        <span class="name">VIBE PROTECT</span>
+      </div>
+      <label class="switch" title="Arm / disarm">
+        <input id="enabled" type="checkbox" />
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <section class="stats">
+      <div class="card">
+        <div class="label">EVENTS</div>
+        <div class="value" id="events-count">0</div>
+      </div>
+      <div class="card">
+        <div class="label">SECRETS CAUGHT</div>
+        <div class="value" id="secrets-count">0</div>
+      </div>
+    </section>
+
+    <section class="feed">
+      <div class="feed-label">RECENT</div>
+      <ul id="feed"></ul>
+    </section>
+
+    <footer>
+      <a id="options-link" href="#">Patterns & settings</a>
+      <span>·</span>
+      <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
