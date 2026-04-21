@@ -75,8 +75,10 @@ export default function Playground() {
       await navigator.clipboard.writeText(cleaned);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      // clipboard API blocked / unavailable — non-actionable for the user
+      // eslint-disable-next-line no-console
+      console.debug("[vp] clipboard write failed:", e);
     }
   };
 
@@ -89,7 +91,9 @@ export default function Playground() {
       const { data } = await axios.post(`${BACKEND_URL}/api/redact`, { text: input, advanced });
       setServerVerified(data.matches.length === matches.length);
       setTimeout(() => setServerVerified(null), 2200);
-    } catch {
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("[vp] server-side verify failed:", e);
       setServerVerified(false);
       setTimeout(() => setServerVerified(null), 2200);
     }
@@ -173,8 +177,9 @@ export default function Playground() {
       await navigator.clipboard.writeText(url);
       setReceiptCopied(true);
       setTimeout(() => setReceiptCopied(false), 1800);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("[vp] receipt-link copy failed:", e);
     }
   };
 

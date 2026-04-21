@@ -54,8 +54,10 @@ export default function StatsPanel() {
       try {
         const { data } = await axios.get(`${BACKEND_URL}/api/stats`);
         setStats(data);
-      } catch {
-        /* keep defaults */
+      } catch (e) {
+        // keep defaults — no user-facing error, but surface for devs
+        // eslint-disable-next-line no-console
+        console.debug("[vp] /api/stats fetch failed, using defaults:", e);
       }
     };
     fetchStats();

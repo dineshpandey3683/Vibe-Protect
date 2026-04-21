@@ -19,8 +19,10 @@ export default function Nav() {
       try {
         const { data } = await axios.get(`${BACKEND_URL}/api/version`);
         setVersionInfo(data);
-      } catch {
-        /* silently ignore */
+      } catch (e) {
+        // version banner is purely informational; no UI error
+        // eslint-disable-next-line no-console
+        console.debug("[vp] /api/version fetch failed:", e);
       }
     };
     load();

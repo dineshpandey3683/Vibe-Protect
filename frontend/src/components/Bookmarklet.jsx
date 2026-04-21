@@ -65,8 +65,10 @@ export default function Bookmarklet() {
       await navigator.clipboard.writeText(href);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      // clipboard API blocked; user can still drag the button
+      // eslint-disable-next-line no-console
+      console.debug("[vp] bookmarklet copy failed:", e);
     }
   };
 
