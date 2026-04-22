@@ -1,9 +1,19 @@
 name: ci
 
-# Runs the full pytest corpus on every push/PR and regenerates
-# frontend/public/stats.json from the same fixtures. The stats file
-# becomes a build artifact so the web dashboard's "Receipts" panel can
-# be populated from the latest green run.
+# Every push / PR:
+#   1. Install the CLI as a real wheel (`pip install -e .`) and run the
+#      full pytest battery — same way end-users will have the CLI on
+#      their machine.
+#   2. Regenerate `frontend/public/stats.json` + `stats-history.jsonl`
+#      from the corpus so the deployed "Receipts" panel is always
+#      derived from the *latest* green run.
+#   3. Run `yarn build` so a frontend regression fails the pipeline,
+#      not the deploy.
+#
+# Note: the secret-scanner workflow (`secrets-scan.yml`) is kept for
+# reference but is gated to `workflow_dispatch` only — it fires on test
+# fixtures whose entire purpose is to *be* matched by the detector, so
+# auto-running it on PRs produces 100% false-positive noise.
 
 on:
   push:
@@ -25,19 +35,19 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install the CLI as an editable wheel
         run: |
           python -m pip install --upgrade pip
+          pip install -e .
           pip install -r backend/requirements.txt
-          pip install -r cli/requirements.txt
           pip install pytest requests
 
-      - name: Run pattern-corpus test suite
-        run: |
-          pytest backend/tests/test_corpus.py \
-                 backend/tests/test_ml_scorer.py \
-                 backend/tests/test_audit_sqlite.py \
-                 backend/tests/test_enterprise_dispatcher.py -v
+      - name: Run full pytest battery
+        # Tkinter-only tests skip automatically via pytest.importorskip
+        # on CI runners without libtk. End-to-end git-hook tests skip
+        # when `vibe-protect` isn't on PATH — but it IS after
+        # `pip install -e .`, so they WILL run on CI.
+        run: pytest backend/tests/ -v
 
       - name: Restore previous stats history (if any)
         uses: actions/download-artifact@v4
@@ -65,3 +75,43 @@ jobs:
           name: stats-history
           path: frontend/public/stats-history.jsonl
           retention-days: 90
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    needs: [test-and-stats]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: frontend/yarn.lock
+
+      # Pull the freshly-generated stats.json into the frontend public/
+      # dir so the production bundle ships with real numbers, not a
+      # stale committed copy.
+      - name: Download fresh stats.json
+        uses: actions/download-artifact@v4
+        with:
+          name: stats-json
+          path: frontend/public/
+
+      - name: Install frontend deps
+        run: |
+          cd frontend
+          yarn install --frozen-lockfile
+
+      - name: Build production bundle
+        run: |
+          cd frontend
+          yarn build
+
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build/
+          retention-days: 14
