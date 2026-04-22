@@ -279,6 +279,17 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="vibe_protect_enterprise",
         description=f"Vibe Protect Enterprise v{VERSION} — unified CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "\n"
+            "PRIVACY NOTICE\n"
+            "  * Zero data collection about you — by default and forever.\n"
+            "  * Audit logs (optional, --audit) are AES-256-GCM + HMAC local-only.\n"
+            "  * Enterprise mode never transmits clipboard, secrets, or metadata.\n"
+            "\n"
+            "  Verify live config : vibe_protect_enterprise --verify-telemetry\n"
+            "  Full declaration   : docs/PRIVACY.md\n"
+        ),
     )
     parser.add_argument("--build-chrome", action="store_true",
                         help="package /app/extension into dist/*.zip for Chrome Web Store")

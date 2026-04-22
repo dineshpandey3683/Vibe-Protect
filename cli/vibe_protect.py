@@ -435,7 +435,25 @@ def _verify_telemetry() -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Vibe Protect — clipboard secret redactor")
+    parser = argparse.ArgumentParser(
+        description="Vibe Protect — clipboard secret redactor",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "\n"
+            "PRIVACY NOTICE\n"
+            "  * Zero data collection about you.\n"
+            "  * Clipboard / secrets / redacted text are NEVER transmitted.\n"
+            "  * Scanning modes (--file, --pre-commit, --install-hook, --json) are\n"
+            "    fully offline. Clipboard-monitor mode makes ONE opt-out GET to\n"
+            "    api.github.com at startup to check for updates — disable with\n"
+            "    --no-update-check or VP_DISABLE_UPDATE_CHECK=1.\n"
+            "  * Optional --audit writes an encrypted + HMAC'd local ledger only.\n"
+            "\n"
+            "  Verify live config : vibe-protect --verify-telemetry\n"
+            "  Full declaration   : docs/PRIVACY.md\n"
+            "  Network surface    : docs/NETWORK.md\n"
+        ),
+    )
     parser.add_argument("--log", help="Append each redaction event to a JSONL file")
     parser.add_argument("--quiet", action="store_true", help="Suppress console output")
     parser.add_argument("--no-notify", action="store_true", help="Disable desktop notifications")
