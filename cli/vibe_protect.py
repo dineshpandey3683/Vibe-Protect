@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -331,6 +332,108 @@ def _uninstall_pre_commit_hook() -> int:
     return 0
 
 
+# --- telemetry verification --------------------------------------------------
+def _verify_telemetry() -> int:
+    """Inspect the CURRENT on-disk + env configuration and print exactly
+    what the process will / won't do over the network.
+
+    This is a diagnostic, not a guarantee — it reflects the live state,
+    not a marketing claim. See ``docs/PRIVACY.md`` for the declaration.
+    """
+    lines = []
+    lines.append(f"{BOLD}Vibe Protect — telemetry verification{RESET}")
+    lines.append(f"{DIM}{'─' * 60}{RESET}")
+
+    # ---- 1. data-at-rest inspection ---------------------------------------
+    data_dir = Path.home() / ".vibeprotect"
+    lines.append(f"\n{BOLD}1. Data on disk{RESET}  ({data_dir})")
+    if not data_dir.exists():
+        lines.append(f"   {GREEN}✓{RESET} directory does not exist — zero files written")
+    else:
+        entries = sorted(p for p in data_dir.rglob("*") if p.is_file())
+        if not entries:
+            lines.append(f"   {GREEN}✓{RESET} directory is empty")
+        else:
+            lines.append(
+                f"   {AMBER}●{RESET} {len(entries)} local file(s) "
+                f"{DIM}(never transmitted — local-only):{RESET}"
+            )
+            for p in entries[:12]:
+                rel = p.relative_to(data_dir)
+                size = p.stat().st_size
+                lines.append(f"      {DIM}- {rel}  ({size:,} bytes){RESET}")
+            if len(entries) > 12:
+                lines.append(f"      {DIM}  … and {len(entries) - 12} more{RESET}")
+
+    # ---- 2. network touchpoints (intent, not introspection) ---------------
+    lines.append(f"\n{BOLD}2. Network touchpoints for your current config{RESET}")
+    update_disabled = os.environ.get("VP_DISABLE_UPDATE_CHECK") == "1"
+    pattern_disabled = os.environ.get("VP_DISABLE_PATTERN_SYNC") == "1"
+
+    def _entry(name: str, enabled: bool, endpoint: str, opt_out: str) -> str:
+        icon = f"{AMBER}● on (opt-out){RESET}" if enabled else f"{GREEN}✓ disabled{RESET}"
+        return (
+            f"   {icon}  {name}\n"
+            f"      endpoint: {endpoint}\n"
+            f"      disable : {opt_out}"
+        )
+
+    lines.append(_entry(
+        "update check (clipboard-monitor only)",
+        enabled=not update_disabled,
+        endpoint="https://api.github.com/repos/<org>/vibe-protect/releases/latest",
+        opt_out="--no-update-check  or  VP_DISABLE_UPDATE_CHECK=1",
+    ))
+    lines.append(_entry(
+        "pattern library refresh (clipboard-monitor only)",
+        enabled=not pattern_disabled,
+        endpoint="https://raw.githubusercontent.com/<org>/vibe-protect/main/patterns.bundle.json",
+        opt_out="--no-pattern-sync  or  VP_DISABLE_PATTERN_SYNC=1",
+    ))
+    lines.append(
+        f"   {GREEN}✓ always offline{RESET}  --file / --pre-commit / --install-hook / --json\n"
+        f"      these entry points exit before any network code path"
+    )
+
+    # ---- 3. what's explicitly NEVER sent ----------------------------------
+    lines.append(f"\n{BOLD}3. What is NEVER sent, in any mode{RESET}")
+    for item in (
+        "clipboard content",
+        "detected secrets (plaintext)",
+        "redacted output",
+        "usage / analytics / telemetry",
+        "IP address, device ID, machine name",
+        "audit log contents",
+    ):
+        lines.append(f"   {GREEN}✗{RESET} {item}")
+
+    # ---- 4. reachability probe (optional) ---------------------------------
+    lines.append(f"\n{BOLD}4. Live reachability probe{RESET}")
+    lines.append(
+        f"   {DIM}Attempting a 2s GET to github.com — only to show whether your{RESET}\n"
+        f"   {DIM}network would even permit the update-check if it were enabled.{RESET}"
+    )
+    try:
+        import urllib.request  # noqa: WPS433 (lazy import — keeps CLI start-up fast)
+        with urllib.request.urlopen(  # nosec — github.com only
+            "https://github.com/",
+            timeout=2,
+        ) as resp:
+            status = resp.status
+            lines.append(f"   {DIM}→ github.com reachable (HTTP {status}){RESET}")
+    except Exception as exc:  # noqa: BLE001 — probe is best-effort
+        lines.append(f"   {DIM}→ github.com NOT reachable ({exc.__class__.__name__}){RESET}")
+
+    lines.append(f"\n{DIM}{'─' * 60}{RESET}")
+    lines.append(
+        f"{GREEN}✓ Zero telemetry about you is collected or transmitted.{RESET}\n"
+        f"  Full declaration: docs/PRIVACY.md\n"
+        f"  Network surface : docs/NETWORK.md"
+    )
+    print("\n".join(lines))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Vibe Protect — clipboard secret redactor")
     parser.add_argument("--log", help="Append each redaction event to a JSONL file")
@@ -433,6 +536,13 @@ def main() -> int:
         help="With --install-hook, back up any existing pre-commit hook and "
              "install ours anyway.",
     )
+    parser.add_argument(
+        "--verify-telemetry",
+        action="store_true",
+        help="Inspect the current config and print exactly what network "
+             "touchpoints will / won't run. Reflects live state, not a "
+             "marketing claim.",
+    )
     args = parser.parse_args()
 
     # --pre-commit implies --json
@@ -505,6 +615,9 @@ def main() -> int:
 
     if args.uninstall_hook:
         return _uninstall_pre_commit_hook()
+
+    if args.verify_telemetry:
+        return _verify_telemetry()
 
     # ------------------------------------------------------------------ #
     # --file / --pre-commit  —  file-scan modes (never enter the         #

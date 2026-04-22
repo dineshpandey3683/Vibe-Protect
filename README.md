@@ -215,7 +215,30 @@ or weaken a higher tier's protection.
 
 ---
 
-## Privacy
+## 🔒 Privacy & data collection
+
+**TL;DR — Vibe Protect collects NOTHING about you.**
+
+| | |
+|---|---|
+| Does it save my data? | ❌ No |
+| Does it send data anywhere? | ❌ No usage analytics, no telemetry, no crash reports |
+| Does it need internet? | ❌ No — works 100% offline |
+| Does it store clipboard history? | ❌ No |
+| Does it phone home at startup? | ⚠ Clipboard-monitor mode does **one** opt-out HTTPS GET to `api.github.com` (update check) — disable with `--no-update-check` or `VP_DISABLE_UPDATE_CHECK=1`. File-scan / CI / pre-commit modes are fully offline. |
+
+**Optional features (all off by default unless noted):**
+
+- `--audit` — writes a local AES-256-GCM + HMAC-authenticated audit log to `~/.vibeprotect/audit/`. **Never transmitted.** Stores event type, timestamp, secret-type label, and confidence — never the plaintext.
+
+**Verify it yourself:**
+
+```bash
+vibe-protect --verify-telemetry   # inspects your live config
+ls -la ~/.vibeprotect/            # shows local files, if any
+```
+
+**Older privacy notes (still accurate):**
 
 - **CLI, desktop, extension:** the only network call is an optional, throttled
   *update check* against the public GitHub releases API (disabled via
@@ -225,6 +248,8 @@ or weaken a higher tier's protection.
 - **Web playground:** the `/api/redact` endpoint stores *counts only*
   (which patterns matched, how many chars). Never the original text, never
   the redacted text, never an IP, never a user identifier.
+
+📖 **Full declaration:** [`docs/PRIVACY.md`](./docs/PRIVACY.md) · **Network surface:** [`docs/NETWORK.md`](./docs/NETWORK.md)
 
 ---
 

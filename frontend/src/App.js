@@ -9,8 +9,15 @@ import StatsPanel from "@/components/StatsPanel";
 import Downloads from "@/components/Downloads";
 import Feed from "@/components/Feed";
 import Footer from "@/components/Footer";
+import PrivacyBadge from "@/components/PrivacyBadge";
+import PrivacyPage from "@/components/PrivacyPage";
 import { Toaster } from "sonner";
 import "@/App.css";
+
+// Tiny path-based router. We don't need react-router for one static
+// page — branch once at mount; the /privacy page is fully static.
+const isPrivacyRoute =
+  typeof window !== "undefined" && window.location.pathname === "/privacy";
 
 function App() {
   return (
@@ -28,18 +35,25 @@ function App() {
           },
         }}
       />
-      <Nav />
-      <main>
-        <Hero />
-        <Bookmarklet />
-        <Receipts />
-        <Playground />
-        <PatternLibrary />
-        <StatsPanel />
-        <Downloads />
-        <Feed />
-      </main>
-      <Footer />
+      {isPrivacyRoute ? (
+        <PrivacyPage />
+      ) : (
+        <>
+          <Nav />
+          <main>
+            <Hero />
+            <Bookmarklet />
+            <Receipts />
+            <Playground />
+            <PatternLibrary />
+            <StatsPanel />
+            <Downloads />
+            <Feed />
+          </main>
+          <Footer />
+          <PrivacyBadge />
+        </>
+      )}
     </div>
   );
 }
