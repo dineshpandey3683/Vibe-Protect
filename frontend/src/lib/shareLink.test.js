@@ -76,9 +76,30 @@ describe("clip codec", () => {
   test("hard-caps to CLIP_MAX_CHARS", () => {
     const huge = "a".repeat(__test.CLIP_MAX_CHARS + 1000);
     const enc = encodeClip(huge);
-    expect(decodeClipFromHash("#playground&clip=" + enc).length).toBe(
-      __test.CLIP_MAX_CHARS
-    );
+    const decoded = decodeClipFromHash("#playground&clip=" + enc);
+    // encodeClip is the OLD-style call (no truncation flag); decodeClip
+    // still returns a bare string in that case.
+    expect(typeof decoded).toBe("string");
+    expect(decoded.length).toBe(__test.CLIP_MAX_CHARS);
+  });
+
+  test("CLIP_MAX_CHARS is 8000 (bookmarklet-safe)", () => {
+    expect(__test.CLIP_MAX_CHARS).toBe(8000);
+  });
+
+  test("decoder recognises truncation flag from newer bookmarklets", () => {
+    const payload = JSON.stringify({
+      v: 1,
+      c: "a".repeat(8000),
+      trunc: true,
+      orig: 50000,
+    });
+    const enc = __test.utf8Btoa(payload);
+    const decoded = decodeClipFromHash("#playground&clip=" + enc);
+    expect(typeof decoded).toBe("object");
+    expect(decoded.truncated).toBe(true);
+    expect(decoded.originalLength).toBe(50000);
+    expect(decoded.text).toHaveLength(8000);
   });
 
   test("returns null on missing / malformed / wrong version", () => {

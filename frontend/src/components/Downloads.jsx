@@ -7,13 +7,13 @@ const CARDS = [
     name: "cli",
     icon: Terminal,
     title: "CLI",
-    tagline: "One Python script. Runs in your terminal.",
-    install: "pip install pyperclip plyer\npython vibe_protect.py",
+    tagline: "One install. Runs everywhere.",
+    install: "pip install vibe-protect\nvibe-protect",
     bullets: [
       "macOS · Linux · Windows",
-      "Desktop notifications",
-      "JSONL event log",
-      "--list-patterns, --quiet, --no-notify",
+      "--file / --pre-commit for CI",
+      "`vibe-protect --install-hook` for git",
+      "`--verify-telemetry` · zero outbound by default",
     ],
     href: "cli/",
   },
@@ -22,10 +22,10 @@ const CARDS = [
     icon: Monitor,
     title: "Desktop GUI",
     tagline: "A native window with live history.",
-    install: "pip install pyperclip\npython desktop/vibe_desktop.py",
+    install: "pip install vibe-protect[desktop]\nvibe-protect-desktop",
     bullets: [
       "Tkinter — no heavyweight deps",
-      "Pause / arm with one click",
+      "System-tray icon + autostart",
       "Live redaction feed + counters",
       "100% local, no network calls",
     ],
@@ -36,7 +36,9 @@ const CARDS = [
     icon: Chrome,
     title: "Browser Extension",
     tagline: "Intercepts every copy across every tab.",
-    install: "chrome://extensions → Load unpacked\nselect /extension",
+    install: process.env.REACT_APP_CWS_LISTING_ID
+      ? `https://chromewebstore.google.com/detail/${process.env.REACT_APP_CWS_LISTING_ID}`
+      : "chrome://extensions → Load unpacked\nselect /extension",
     bullets: [
       "Manifest v3 · Chrome, Edge, Brave, Arc",
       "Firefox (about:debugging)",

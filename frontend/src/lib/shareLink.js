@@ -116,7 +116,13 @@ export function buildShareUrl(stats, baseUrl = window.location.href) {
  * Payload: { v:1, c: <clipboard-text> }
  */
 const CLIP_VERSION = 1;
-const CLIP_MAX_CHARS = 20_000; // ~15 KB base64 — safely inside every URL limit
+// Hard cap at 8 KB of plaintext. Every major browser accepts bookmarklet
+// payloads well past 8 KB in practice, but Chromium's omnibox used to
+// truncate long pastes from the address bar at ~8–10 KB and Firefox
+// historically capped URLs at 65 KB. 8 KB plaintext + base64 overhead
+// (~11 KB) leaves comfortable headroom everywhere; anything larger
+// should use the Playground, which has no such constraint.
+const CLIP_MAX_CHARS = 8_000;
 
 // Unicode-safe base64url (the simple btoa() only handles Latin-1)
 function utf8Btoa(s) {
@@ -148,6 +154,17 @@ export function decodeClipFromHash(
   try {
     const payload = JSON.parse(utf8Atob(m[1]));
     if (!payload || payload.v !== CLIP_VERSION || typeof payload.c !== "string") return null;
+    // Older bookmarklets only sent `{v, c}`; newer ones add `trunc` + `orig`
+    // so the Playground can show a "we cut your clipboard" banner when
+    // the user's actual copy exceeded the CAP. Everything below is
+    // optional — missing fields must not break decoding.
+    if (payload.trunc) {
+      return {
+        text: payload.c,
+        truncated: true,
+        originalLength: typeof payload.orig === "number" ? payload.orig : payload.c.length,
+      };
+    }
     return payload.c;
   } catch {
     return null;

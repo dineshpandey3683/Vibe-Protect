@@ -15,16 +15,25 @@ import { Bookmark, MousePointer2, ArrowDown, Check, Copy } from "lucide-react";
  */
 function buildBookmarklet(origin) {
   // Written as a tiny self-contained IIFE — no external deps, no eval.
+  // The hard cap (8000) deliberately matches CLIP_MAX_CHARS in shareLink.js
+  // so the truncation story is the same wherever it shows up. If we exceed
+  // it we still hand off the truncated text AND a small warning flag so
+  // the Playground can show the user "scrubbed first 8K; use the web app
+  // for full text" instead of silently losing input.
   // eslint-disable-next-line no-template-curly-in-string
   const src = `(function(){
     var O='${origin}';
+    var CAP=8000;
     function enc(s){
       var b=new TextEncoder().encode(s),x='';
       for(var i=0;i<b.length;i++)x+=String.fromCharCode(b[i]);
       return btoa(x).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
     }
     function go(t){
-      var p=enc(JSON.stringify({v:1,c:(t||'').slice(0,20000)}));
+      t=t||'';
+      var truncated=t.length>CAP;
+      var c=t.slice(0,CAP);
+      var p=enc(JSON.stringify({v:1,c:c,trunc:truncated,orig:t.length}));
       window.open(O+'/#playground&clip='+p,'_blank');
     }
     if(navigator.clipboard&&navigator.clipboard.readText){

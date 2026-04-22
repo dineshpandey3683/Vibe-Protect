@@ -54,6 +54,8 @@ export default function Playground() {
   const [receiptCopied, setReceiptCopied] = useState(false);
   const [incomingReceipt, setIncomingReceipt] = useState(null); // { ... } | null
   const [clipFromBookmarklet, setClipFromBookmarklet] = useState(false);
+  // { originalLength } when the bookmarklet truncated the clipboard to CAP.
+  const [clipTruncation, setClipTruncation] = useState(null);
   const sectionRef = useRef(null);
 
   const { cleaned, matches } = useMemo(
@@ -127,7 +129,17 @@ export default function Playground() {
       if (!clip && !receipt) return true; // hash present but nothing to decode
       resolved = true;
       if (clip) {
-        setInput(clip);
+        // decodeClipFromHash returns a bare string for older payloads, or
+        // ``{ text, truncated, originalLength }`` for payloads that hit
+        // the 8 KB bookmarklet cap. Handle both shapes.
+        if (typeof clip === "string") {
+          setInput(clip);
+        } else {
+          setInput(clip.text);
+          if (clip.truncated) {
+            setClipTruncation({ originalLength: clip.originalLength });
+          }
+        }
         setClipFromBookmarklet(true);
       }
       if (receipt) {
@@ -206,6 +218,21 @@ export default function Playground() {
               <LinkIcon size={12} />
               {receiptCopied ? "copied!" : "copy receipt link"}
             </button>
+          </div>
+        )}
+
+        {clipTruncation && (
+          <div
+            data-testid="playground-bookmarklet-truncated"
+            className="mb-6 border border-orange-400/40 bg-orange-400/10 text-orange-200 px-4 py-3 text-sm font-mono flex items-start gap-2"
+          >
+            <Zap size={14} className="text-orange-400 mt-0.5 shrink-0" />
+            <div>
+              <span className="font-semibold">your clipboard was truncated</span> to{" "}
+              8,000 chars (original: {clipTruncation.originalLength.toLocaleString()}). URL
+              fragments can't carry arbitrarily large payloads. Paste the full text
+              directly into the Playground below for a complete scan.
+            </div>
           </div>
         )}
 
