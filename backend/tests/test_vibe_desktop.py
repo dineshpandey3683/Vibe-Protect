@@ -31,9 +31,8 @@ import pytest
 pytest.importorskip("tkinter", reason="Tkinter not available — desktop tests skipped")
 
 ROOT = Path(__file__).resolve().parents[2]
-DESKTOP_DIR = ROOT / "desktop"
 CLI_DIR = ROOT / "cli"
-for p in (str(DESKTOP_DIR), str(CLI_DIR)):
+for p in (str(CLI_DIR),):
     if p not in sys.path:
         sys.path.insert(0, p)
 

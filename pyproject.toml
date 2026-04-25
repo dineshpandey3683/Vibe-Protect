@@ -79,26 +79,24 @@ Security      = "https://github.com/vibeprotect/vibe-protect/blob/main/SECURITY.
 vibe-protect            = "vibe_protect:main"
 # Enterprise dispatcher: --build-chrome / --audit / --test-bug / etc.
 vibe-protect-enterprise = "vibe_protect_enterprise:main"
+# Desktop GUI (Tkinter + system-tray). Pulls in the [desktop] extras.
+vibe-protect-desktop    = "vibe_desktop:main"
 
 # ---------------------------------------------------------------------------
 # Module layout
 # ---------------------------------------------------------------------------
 # We ship cli/*.py as flat top-level modules (``vibe_protect``,
-# ``advanced_detector``, ``audit_logger``, …). That keeps the wheel
-# mechanically identical to a dev checkout — the same ``sys.path``
-# manipulation the tests already do works verbatim post-install, so
-# the 105-case pytest regression suite is our wheel smoke-test.
-#
-# Trade-off acknowledged: a pip-install adds ~12 top-level names to the
-# user's environment. In exchange we avoid a full package-rename refactor
-# (would touch every test, script, and internal import). Can be tightened
-# into a proper ``vibe_protect`` namespace in a 2.0 release without
-# breaking any CLI-only consumer.
+# ``vibe_desktop``, ``advanced_detector``, ``audit_logger``, …). That
+# keeps the wheel mechanically identical to a dev checkout — the same
+# ``sys.path`` manipulation the tests already do works verbatim
+# post-install, so the pytest battery doubles as our wheel smoke-test.
 [tool.setuptools]
 package-dir = { "" = "cli" }
 py-modules = [
     "vibe_protect",
     "vibe_protect_enterprise",
+    "vibe_desktop",
+    "autostart",
     "patterns",
     "advanced_detector",
     "audit_logger",

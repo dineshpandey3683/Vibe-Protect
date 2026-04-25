@@ -1,6 +1,6 @@
 """
-Tests for ``/app/desktop/autostart.py`` — the cross-platform "start at
-login" helper.
+Tests for ``cli/autostart.py`` — the cross-platform "start at login"
+helper that ships with the desktop GUI.
 
 We patch the desktop-file / plist paths to ``tmp_path`` so the tests
 never touch the host's real ``~/.config/autostart`` or
@@ -16,9 +16,9 @@ from pathlib import Path
 
 import pytest
 
-DESKTOP_DIR = Path(__file__).resolve().parents[2] / "desktop"
-if str(DESKTOP_DIR) not in sys.path:
-    sys.path.insert(0, str(DESKTOP_DIR))
+CLI_DIR = Path(__file__).resolve().parents[2] / "cli"
+if str(CLI_DIR) not in sys.path:
+    sys.path.insert(0, str(CLI_DIR))
 
 import autostart  # noqa: E402
 

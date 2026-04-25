@@ -22,7 +22,7 @@ const CARDS = [
     icon: Monitor,
     title: "Desktop GUI",
     tagline: "A native window with live history.",
-    install: "pip install vibe-protect[desktop]\nvibe-protect-desktop",
+    install: 'pip install "vibe-protect[desktop]"\nvibe-protect-desktop',
     bullets: [
       "Tkinter — no heavyweight deps",
       "System-tray icon + autostart",
