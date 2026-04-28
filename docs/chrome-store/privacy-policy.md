@@ -52,7 +52,7 @@ to — and we don't want to.
 
 ## Open source
 
-The full source is at <https://github.com/vibeprotect/vibe-protect>.
+The full source is at <https://github.com/dineshpandey3683/Vibe-Protect>.
 Every line of code that runs in your browser is auditable — including
 the builds we ship to the Chrome Web Store (the zip is produced by
 `cli/vibe_protect_enterprise.py --build-chrome` from the public repo).

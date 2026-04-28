@@ -81,7 +81,7 @@ export default function Nav() {
         </nav>
         <div className="flex items-center gap-2">
           <a
-            href="https://github.com"
+            href="https://github.com/dineshpandey3683/Vibe-Protect"
             target="_blank"
             rel="noopener noreferrer"
             data-testid="nav-github-link"

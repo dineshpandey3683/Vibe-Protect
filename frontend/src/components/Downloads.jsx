@@ -131,7 +131,7 @@ export default function Downloads() {
             </p>
           </div>
           <a
-            href="https://github.com"
+            href="https://github.com/dineshpandey3683/Vibe-Protect"
             target="_blank"
             rel="noopener noreferrer"
             data-testid="downloads-github-cta"

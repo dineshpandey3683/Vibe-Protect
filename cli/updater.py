@@ -36,7 +36,7 @@ _CACHE_FILE = _CACHE_DIR / "last_check.json"
 
 DEFAULT_REPO_API = os.environ.get(
     "VP_UPDATE_URL",
-    "https://api.github.com/repos/vibeprotect/vibe-protect/releases/latest",
+    "https://api.github.com/repos/dineshpandey3683/Vibe-Protect/releases/latest",
 )
 THROTTLE_SECONDS = 6 * 60 * 60  # 6 hours
 REQUEST_TIMEOUT = 6.0

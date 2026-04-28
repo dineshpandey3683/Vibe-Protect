@@ -22,13 +22,13 @@ export default function Footer() {
             zero telemetry, runs entirely on your machine.
           </p>
           <a
-            href="https://github.com"
+            href="https://github.com/dineshpandey3683/Vibe-Protect"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-5 inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 transition-colors"
             data-testid="footer-github-link"
           >
-            <Github size={14} /> github.com/vibe-protect
+            <Github size={14} /> github.com/dineshpandey3683/Vibe-Protect
           </a>
         </div>
         <div className="md:col-span-2">

@@ -2,7 +2,7 @@
 
 Redact API keys, tokens, and PII from your code with one keystroke — powered by
 the same detection engine as the [Vibe Protect CLI, desktop app, and Chrome
-extension](https://github.com/vibeprotect/vibe-protect).
+extension](https://github.com/dineshpandey3683/Vibe-Protect).
 
 > **One source of truth.** This extension does not re-implement the pattern
 > library in TypeScript. It shells out to `vibe-protect --file - --json`, so

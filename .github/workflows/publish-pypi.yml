@@ -6,7 +6,7 @@ name: publish-pypi
 #
 #   https://pypi.org/manage/account/publishing/
 #     package-name: vibe-protect
-#     repository:   vibeprotect/vibe-protect
+#     repository:   dineshpandey3683/Vibe-Protect
 #     workflow:     publish-pypi.yml
 #     environment:  pypi
 #

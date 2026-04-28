@@ -48,8 +48,8 @@ process performs **at most two** HTTPS GETs at startup:
 
 | Request | URL | What's sent | Opt out |
 |---|---|---|---|
-| Version check | `api.github.com/repos/<org>/vibe-protect/releases/latest` | only the default `urllib` User-Agent | `--no-update-check` or `VP_DISABLE_UPDATE_CHECK=1` |
-| Pattern library refresh | `github.com/<org>/vibe-protect/raw/main/patterns.bundle.json` | only the default `urllib` User-Agent | `--no-pattern-sync` or `VP_DISABLE_PATTERN_SYNC=1` |
+| Version check | `api.github.com/repos/dineshpandey3683/Vibe-Protect/releases/latest` | only the default `urllib` User-Agent | `--no-update-check` or `VP_DISABLE_UPDATE_CHECK=1` |
+| Pattern library refresh | `github.com/dineshpandey3683/Vibe-Protect/raw/main/patterns.bundle.json` | only the default `urllib` User-Agent | `--no-pattern-sync` or `VP_DISABLE_PATTERN_SYNC=1` |
 
 Both are cached for 6 hours. Neither sends **anything about your
 clipboard, your machine, or your usage** — they're plain GETs for

@@ -84,7 +84,7 @@ sudo tcpdump -i any host api.github.com   # watch the wire`}
         <p>
           Full declaration:{" "}
           <a
-            href="https://github.com/vibeprotect/vibe-protect/blob/main/docs/PRIVACY.md"
+            href="https://github.com/dineshpandey3683/Vibe-Protect/blob/main/docs/PRIVACY.md"
             className="text-amber-400 hover:underline inline-flex items-center gap-1"
             data-testid="privacy-github-link"
           >
@@ -94,7 +94,7 @@ sudo tcpdump -i any host api.github.com   # watch the wire`}
         <p className="mt-2">
           Network requirements:{" "}
           <a
-            href="https://github.com/vibeprotect/vibe-protect/blob/main/docs/NETWORK.md"
+            href="https://github.com/dineshpandey3683/Vibe-Protect/blob/main/docs/NETWORK.md"
             className="text-amber-400 hover:underline inline-flex items-center gap-1"
           >
             docs/NETWORK.md <ExternalLink size={10} />

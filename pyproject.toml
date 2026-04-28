@@ -68,11 +68,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage      = "https://github.com/vibeprotect/vibe-protect"
-Documentation = "https://github.com/vibeprotect/vibe-protect#readme"
-Issues        = "https://github.com/vibeprotect/vibe-protect/issues"
-Changelog     = "https://github.com/vibeprotect/vibe-protect/blob/main/CHANGELOG.md"
-Security      = "https://github.com/vibeprotect/vibe-protect/blob/main/SECURITY.md"
+Homepage      = "https://github.com/dineshpandey3683/Vibe-Protect"
+Documentation = "https://github.com/dineshpandey3683/Vibe-Protect#readme"
+Issues        = "https://github.com/dineshpandey3683/Vibe-Protect/issues"
+Changelog     = "https://github.com/dineshpandey3683/Vibe-Protect/blob/main/CHANGELOG.md"
+Security      = "https://github.com/dineshpandey3683/Vibe-Protect/blob/main/SECURITY.md"
 
 [project.scripts]
 # Primary entry point: clipboard monitor + redact-pipe + scan commands.

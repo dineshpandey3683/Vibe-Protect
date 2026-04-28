@@ -10,7 +10,7 @@
   "keywords": ["security", "secrets", "redact", "dlp", "clipboard", "vibe-protect"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibeprotect/vibe-protect"
+    "url": "https://github.com/dineshpandey3683/Vibe-Protect"
   },
   "engines": {
     "vscode": "^1.75.0"

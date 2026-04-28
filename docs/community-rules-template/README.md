@@ -2,10 +2,10 @@
 
 This folder shows what the repo at the
 `VP_COMMUNITY_RULES_URL` should look like. Copy its contents to a new public
-GitHub repo — e.g. `github.com/<your-org>/community-rules` — and point
+GitHub repo — e.g. `github.com/dineshpandey3683/community-rules` — and point
 `VP_COMMUNITY_RULES_URL` at the raw `main` branch of `approved_patterns.json`:
 
-    https://raw.githubusercontent.com/<your-org>/community-rules/main/approved_patterns.json
+    https://raw.githubusercontent.com/dineshpandey3683/community-rules/main/approved_patterns.json
 
 The separate repo pattern is deliberate:
 

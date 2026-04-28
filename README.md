@@ -87,7 +87,7 @@ SSO JWT validation), or `pip install "vibe-protect[all]"`.
 ### CLI (from source, 30 seconds)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/vibe-protect.git
+git clone https://github.com/dineshpandey3683/Vibe-Protect.git
 cd vibe-protect/cli
 pip install -r requirements.txt
 python vibe_protect.py

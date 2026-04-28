@@ -381,13 +381,13 @@ def _verify_telemetry() -> int:
     lines.append(_entry(
         "update check (clipboard-monitor only)",
         enabled=not update_disabled,
-        endpoint="https://api.github.com/repos/<org>/vibe-protect/releases/latest",
+        endpoint="https://api.github.com/repos/dineshpandey3683/Vibe-Protect/releases/latest",
         opt_out="--no-update-check  or  VP_DISABLE_UPDATE_CHECK=1",
     ))
     lines.append(_entry(
         "pattern library refresh (clipboard-monitor only)",
         enabled=not pattern_disabled,
-        endpoint="https://raw.githubusercontent.com/<org>/vibe-protect/main/patterns.bundle.json",
+        endpoint="https://raw.githubusercontent.com/dineshpandey3683/Vibe-Protect/main/patterns.bundle.json",
         opt_out="--no-pattern-sync  or  VP_DISABLE_PATTERN_SYNC=1",
     ))
     lines.append(

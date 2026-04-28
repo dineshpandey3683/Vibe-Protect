@@ -18,7 +18,7 @@ one. Anything older, please upgrade first before reporting.
 **Please do not open a public GitHub issue for security reports.**
 
 - **Preferred:** submit through [Huntr.dev](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fvibeprotect%2Fvibe-protect) — researchers get credited and (eventually) paid via our program
-- **Alternate:** open a [GitHub Security Advisory](https://github.com/vibeprotect/vibe-protect/security/advisories/new) — private, tracked, signed
+- **Alternate:** open a [GitHub Security Advisory](https://github.com/dineshpandey3683/Vibe-Protect/security/advisories/new) — private, tracked, signed
 - **Email (fallback):** `security@vibeprotect.com` — GPG key fingerprint `TODO_PUBLISH_BEFORE_FIRST_RELEASE`
 
 Please include, where possible:

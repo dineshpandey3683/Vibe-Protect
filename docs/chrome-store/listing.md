@@ -43,7 +43,7 @@ Developer Dashboard at <https://chrome.google.com/webstore/devconsole>.
       install — it asks only when you actively enable protection on a
       page (just-in-time permission model).
     • No analytics, no error reporting, no "call home" heartbeat.
-    • Source code at https://github.com/vibeprotect/vibe-protect —
+    • Source code at https://github.com/dineshpandey3683/Vibe-Protect —
       audit it yourself, or run your own build.
 
     FREE AND OPEN SOURCE

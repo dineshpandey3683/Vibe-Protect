@@ -47,7 +47,7 @@ def generate_report(
 
     **Please submit this via one of:**
     - Huntr: https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fvibeprotect%2Fvibe-protect
-    - GitHub Security Advisory (private): https://github.com/vibeprotect/vibe-protect/security/advisories/new
+    - GitHub Security Advisory (private): https://github.com/dineshpandey3683/Vibe-Protect/security/advisories/new
 
     ## Summary
     **Title:** {title or "(please fill in)"}

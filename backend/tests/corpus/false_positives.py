@@ -93,7 +93,7 @@ FALSE_POSITIVES = [
 
     # ------------------------------------------------ URLs without credentials
     "https://api.example.com/v1/users",
-    "https://github.com/vibeprotect/vibe-protect",
+    "https://github.com/dineshpandey3683/Vibe-Protect",
     "https://docs.anthropic.com/claude/docs",
     "https://platform.openai.com/docs/api-reference",
     "https://aws.amazon.com/iam/",

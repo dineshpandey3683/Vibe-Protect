@@ -42,7 +42,7 @@ These entry points are **network-silent by design**:
 - `vibe-protect --pre-commit`
 - `vibe-protect --install-hook`
 - `vibe-protect --json`
-- the Docker image (`docker run vibeprotect/vibe-protect …`)
+- the Docker image (`docker run dineshpandey3683/Vibe-Protect …`)
 - the VS Code extension's redact / scan commands
 
 They exit before any update-check code path runs. Verify with
