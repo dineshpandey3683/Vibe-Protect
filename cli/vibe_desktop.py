@@ -29,8 +29,32 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "cli")))
 sys.path.insert(0, _HERE)   # so `autostart` resolves locally
 
-import tkinter as tk
-from tkinter import ttk
+# ---------------------------------------------------------------------------
+# Friendly failure for distros missing the Tk system library.
+#
+# ``tkinter`` ships with CPython but dlopens ``libtk``/``libtcl`` at import
+# time. On headless Linux images (Docker slim, Alpine, stripped Debian)
+# that library is often absent and the raw ``ImportError: libtk8.6.so``
+# is hostile to users doing ``pip install "vibe-protect[desktop]"`` and
+# expecting a GUI. Catch it here and print the right apt/brew command.
+# ---------------------------------------------------------------------------
+try:
+    import tkinter as tk
+    from tkinter import ttk
+except ImportError as _tk_import_error:  # noqa: F841
+    _msg = (
+        "\nvibe-protect-desktop needs Tk, but the system Tk library is missing.\n"
+        "Install it with one of:\n"
+        "  Debian / Ubuntu : sudo apt-get install python3-tk tk8.6\n"
+        "  Fedora / RHEL   : sudo dnf install python3-tkinter\n"
+        "  macOS (brew)    : brew install python-tk@3.11\n"
+        "  Arch            : sudo pacman -S tk\n"
+        "  Windows         : Tk ships with the Python.org installer — reinstall Python\n"
+        "\nAfter installing Tk, re-run 'vibe-protect-desktop'.\n"
+        "(or use the CLI: 'vibe-protect' — no Tk required)\n"
+    )
+    print(_msg, file=sys.stderr)
+    sys.exit(2)
 
 import pyperclip  # noqa: E402
 from patterns import redact, PATTERNS  # noqa: E402
