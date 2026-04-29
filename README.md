@@ -1,6 +1,6 @@
 <div align="center">
 
-# ▍ vibe·protect
+# ▌ vibe·protect
 
 **A clipboard guardian for developers in the AI era.**
 
@@ -69,7 +69,7 @@ Run `python cli/vibe_protect.py --list-patterns` for the live list.
 ### Install via pip (preferred)
 
 ```bash
-pip install vibe-protect
+pip install vibe-protect==1.0.1
 
 # launch the clipboard monitor
 vibe-protect
@@ -87,7 +87,7 @@ SSO JWT validation), or `pip install "vibe-protect[all]"`.
 ### CLI (from source, 30 seconds)
 
 ```bash
-git clone https://github.com/dineshpandey3683/Vibe-Protect.git
+git clone https://github.com/YOUR_USERNAME/vibe-protect.git
 cd vibe-protect/cli
 pip install -r requirements.txt
 python vibe_protect.py
@@ -260,5 +260,5 @@ MIT. See [LICENSE](LICENSE).
 ---
 
 <div align="center">
-<sub>Built for devs who paste too fast. ❂</sub>
+<sub>Built for devs who paste too fast. ⍚</sub>
 </div>
